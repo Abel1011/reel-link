@@ -928,32 +928,42 @@ function buildScenePlans(
       ?? firstSpeaker?.speakerPortrait
       ?? toAssetUrl(leadCharacterImage)
       ?? toAssetUrl(backgroundImage);
-    const scene: ScenePlan = {
-      kind: sceneKind,
-      at: sectionStart,
-      duration: sectionDuration,
-      trackBase: 200 + sectionIndex * 200,
-      label: `Scene ${sectionIndex + 1}`,
-      backdrop: backdropForTone(
-        project.brief?.tone,
-        sceneKind === "heroPose" || ambientStormActive,
-        ambientStormActive || /(storm|panic|collapse|impact|secret|fear|dark)/.test(sceneText),
-      ),
-      backdropImage: toAssetUrl(backgroundImage),
-      rain: ambientStormActive || hasRainAtmosphere(
-        section.narratorText,
-        section.soundEffectCue,
-        section.musicCue,
-        ...section.dialogueLines.map((line) => line.lineText),
-      ),
-    };
+    const baseBackdrop = backdropForTone(
+      project.brief?.tone,
+      sceneKind === "heroPose" || ambientStormActive,
+      ambientStormActive || /(storm|panic|collapse|impact|secret|fear|dark)/.test(sceneText),
+    );
+    const baseRain = ambientStormActive || hasRainAtmosphere(
+      section.narratorText,
+      section.soundEffectCue,
+      section.musicCue,
+      ...section.dialogueLines.map((line) => line.lineText),
+    );
+    const backgroundAsset = toAssetUrl(backgroundImage) ?? toAssetUrl(leadCharacterImage);
 
-    if (sceneKind === "dialogue") {
+    const createBaseScene = (
+      kind: ScenePlan["kind"],
+      at: number,
+      duration: number,
+      label: string,
+      trackOffset = 0,
+    ): ScenePlan => ({
+      kind,
+      at,
+      duration,
+      trackBase: 200 + sectionIndex * 200 + trackOffset,
+      label,
+      backdrop: baseBackdrop,
+      backdropImage: backgroundAsset,
+      rain: baseRain,
+    });
+
+    const buildDialogueScene = (scene: ScenePlan, localStart: number, duration: number): ScenePlan => {
       const leftSpeaker = firstSpeaker ?? timedDialogueLines[0];
       const rightSpeaker = secondSpeaker ?? timedDialogueLines[1] ?? leftSpeaker;
       scene.variant = dialogueVariant;
       scene.leftImage = leftSpeaker?.speakerPortrait ?? toAssetUrl(leadCharacterImage);
-      scene.rightImage = rightSpeaker?.speakerPortrait ?? toAssetUrl(backgroundImage) ?? toAssetUrl(leadCharacterImage);
+      scene.rightImage = rightSpeaker?.speakerPortrait ?? backgroundAsset ?? toAssetUrl(leadCharacterImage);
       scene.leftCaption = leftSpeaker?.speakerName ?? "Lead";
       scene.rightCaption = rightSpeaker?.speakerName ?? "Partner";
       scene.lines = rebaseDialogueRuntimeLines(
@@ -963,28 +973,68 @@ function buildScenePlans(
             (speakerId): speakerId is string => Boolean(speakerId),
           ),
         ),
-        0,
-        sectionDuration,
+        localStart,
+        duration,
       );
-      return [scene];
+      return scene;
+    };
+
+    const buildHeroPoseScene = (scene: ScenePlan, localStart: number, duration: number): ScenePlan => {
+      scene.image = heroCharacterImage;
+      scene.lines = timedDialogueLines.length > 0
+        ? rebaseDialogueRuntimeLines(buildDialogueRuntimeLines(timedDialogueLines, speakerIds), localStart, duration)
+        : undefined;
+      scene.sfx = fxLabelFromCue(section.soundEffectCue);
+      return scene;
+    };
+
+    const buildKenBurnsScene = (scene: ScenePlan): ScenePlan => {
+      scene.image = backgroundAsset;
+      scene.headline = headlineFromSection(section, "Unknown Location");
+      scene.caption = captionFromSection(section, "Unknown Location");
+      return scene;
+    };
+
+    const hasNarratedSetup = narratorDuration > 0.12
+      && timedDialogueLines.length > 0
+      && sectionDuration - narratorDuration > 0.55;
+
+    if (hasNarratedSetup) {
+      const introDuration = Math.max(0.6, Math.min(narratorDuration, sectionDuration - 0.6));
+      const dialogueStart = Math.min(sectionDuration - 0.6, narratorDuration);
+      const dialogueDuration = Math.max(0.6, sectionDuration - dialogueStart);
+      const introScene = buildKenBurnsScene(
+        createBaseScene("kenBurns", sectionStart, introDuration, `Scene ${sectionIndex + 1}A`),
+      );
+
+      const followUpKind: ScenePlan["kind"] = speakerIds.length >= 2 && section.dialogueLines.length >= 2
+        ? "dialogue"
+        : "heroPose";
+      const followUpBase = createBaseScene(
+        followUpKind,
+        sectionStart + dialogueStart,
+        dialogueDuration,
+        `Scene ${sectionIndex + 1}B`,
+        20,
+      );
+      const followUpScene = followUpKind === "dialogue"
+        ? buildDialogueScene(followUpBase, dialogueStart, dialogueDuration)
+        : buildHeroPoseScene(followUpBase, dialogueStart, dialogueDuration);
+
+      return [introScene, followUpScene];
+    }
+
+    const scene = createBaseScene(sceneKind, sectionStart, sectionDuration, `Scene ${sectionIndex + 1}`);
+
+    if (sceneKind === "dialogue") {
+      return [buildDialogueScene(scene, 0, sectionDuration)];
     }
 
     if (sceneKind === "heroPose") {
-      scene.image = heroCharacterImage;
-      scene.lines = timedDialogueLines.length > 0
-        ? rebaseDialogueRuntimeLines(buildDialogueRuntimeLines(timedDialogueLines, speakerIds), 0, sectionDuration)
-        : undefined;
-      scene.sfx = fxLabelFromCue(section.soundEffectCue);
-      return [scene];
+      return [buildHeroPoseScene(scene, 0, sectionDuration)];
     }
 
-    scene.image = toAssetUrl(backgroundImage) ?? toAssetUrl(leadCharacterImage);
-    scene.lines = timedDialogueLines.length > 0
-      ? rebaseDialogueRuntimeLines(buildDialogueRuntimeLines(timedDialogueLines, speakerIds), 0, sectionDuration)
-      : undefined;
-    scene.headline = headlineFromSection(section, "Unknown Location");
-    scene.caption = captionFromSection(section, "Unknown Location");
-    return [scene];
+    return [buildKenBurnsScene(scene)];
   }
 
   const totalDialogueShots = directionShots.filter((shot) => shot.kind === "dialogue").length;

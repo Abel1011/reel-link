@@ -53,7 +53,7 @@ Three MCP servers configured in `.kiro/settings/mcp.json` gave the agent additio
 ### Kiro Powers
 
 - **ElevenLabs Power** — Gave the agent working knowledge of all ElevenLabs APIs (TTS, Voice Design, Music, Sound Effects, Conversational AI) without manually reading docs. Context loaded dynamically based on what was being built.
-- **HyperFrames Power** — Composition authoring reference, GSAP animation patterns, and CLI commands for the video pipeline.
+- **HyperFrames Power** — Built using Kiro's built-in Power Builder, this custom power packages the HyperFrames documentation (composition authoring, GSAP animation patterns, CLI commands) as steering files that load dynamically into the agent's context. This gave the agent accurate knowledge of HyperFrames' `data-*` attributes, timeline registration, and rendering rules when writing video compositions — without us having to paste docs into every prompt.
 
 ---
 
