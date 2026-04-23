@@ -1,0 +1,5 @@
+{
+  "name": "animated-story-creator",
+  "private": true,
+  "workspaces": ["client", "server"]
+}

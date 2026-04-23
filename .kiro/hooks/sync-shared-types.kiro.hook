@@ -1,0 +1,16 @@
+{
+  "enabled": true,
+  "name": "Sync Shared Types",
+  "description": "When server/src/types.ts is edited, automatically compares shared interfaces with client/src/lib/types.ts and syncs any changes to keep frontend and backend types aligned.",
+  "version": "1",
+  "when": {
+    "type": "fileEdited",
+    "patterns": [
+      "server/src/types.ts"
+    ]
+  },
+  "then": {
+    "type": "askAgent",
+    "prompt": "The file server/src/types.ts was just modified. Read both server/src/types.ts and client/src/lib/types.ts, compare the shared interfaces (StoryProject, StoryBrief, StyleConfig, Character, Location, StoryScript, ScriptSection, DialogueLine, ImageLayer, WordTimestamp, Composition, Voice, StylePreset, StyleGenre, StoryTone, StoryLength, StoryOrientation), and update client/src/lib/types.ts to match any added, removed, or changed fields. Skip server-only types like TextImageProvider, ElevenLabsServiceInterface, GenerateStructuredOptions, GenerateImageOptions, SpeechGenerationOptions, AssetManifest, EffectPreset, and other backend-only interfaces."
+  }
+}

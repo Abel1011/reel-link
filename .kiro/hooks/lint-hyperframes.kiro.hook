@@ -1,0 +1,16 @@
+{
+  "enabled": true,
+  "name": "Lint HyperFrames Compositions",
+  "description": "Runs npx hyperframes lint when HTML composition files in the hyperframes directory are edited, catching structural errors early (missing data attributes, overlapping tracks, unregistered timelines).",
+  "version": "1",
+  "when": {
+    "type": "fileEdited",
+    "patterns": [
+      "client/public/hyperframes/**/*.html"
+    ]
+  },
+  "then": {
+    "type": "runCommand",
+    "command": "npx hyperframes lint client/public/hyperframes"
+  }
+}

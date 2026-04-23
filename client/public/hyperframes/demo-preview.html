@@ -1,0 +1,1811 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Story Motion Kit · Scene Library</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,600;9..144,700&family=Outfit:wght@400;500;600;700&family=JetBrains+Mono:wght@500;600&display=swap"
+      rel="stylesheet"
+    />
+    <style>
+      :root { color-scheme: dark; }
+      * { box-sizing: border-box; }
+      html, body {
+        margin: 0; width: 100%; height: 100%;
+        overflow: hidden; background: #080c18;
+      }
+      body { font-family: "Outfit", system-ui, sans-serif; }
+    </style>
+  </head>
+  <body>
+    <div
+      id="root"
+      class="story-stage"
+      data-composition-id="studio-preview"
+      data-start="0"
+      data-width="1920"
+      data-height="1080"
+    ></div>
+
+    <script src="/hyperframes/story-motion-kit.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@hyperframes/core/dist/hyperframe.runtime.iife.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/gsap@3.14.2/dist/gsap.min.js"></script>
+    <script>
+      const root = document.getElementById("root");
+      const compositionId = root.dataset.compositionId || "studio-preview";
+      const kit = window.storyMotionKit;
+      kit.ensureStyles();
+
+      const IMG = (slug) => `/assets/images/style-presets-v2.5/${slug}.png`;
+      const DUR = 5;
+
+      // ---- Scene roster. Just data. Each entry → one preset call. ----
+      // Schema: { name, preset, opts }  — scheduler injects { at, duration, label }.
+      const ROSTER = [
+        {
+          name: "Title + countdown",
+          preset: "title",
+          opts: {
+            eyebrow: "Scene preset library",
+            title: "STORY MOTION",
+            subtitle: "Pass time + content. Done.",
+            backdrop: "night",
+            countdown: [3, 2, 1],
+          },
+        },
+        {
+          name: "Ken Burns",
+          preset: "kenBurns",
+          opts: {
+            image: IMG("impressionist-oil"),
+            headline: "Slow push · ambient story",
+            caption: "Una tarde cualquiera; la luz se mueve sola.",
+            direction: "left",
+            backdrop: "sunset",
+          },
+        },
+        {
+          name: "Dialogue under rain",
+          preset: "dialogue",
+          opts: {
+            leftImage: IMG("shonen-anime"),
+            rightImage: IMG("black-white-manga"),
+            leftCaption: "Hero",
+            rightCaption: "Rival",
+            backdrop: "night",
+            lines: [
+              { side: "left", text: "Te dije que no vinieras.", variant: null },
+              { side: "right", text: "Y yo te dije que no me iba.", variant: null },
+            ],
+          },
+        },
+        {
+          name: "Scream shake",
+          preset: "screamShake",
+          opts: {
+            image: IMG("shonen-anime"),
+            shout: "¡ESPERA!",
+            sfx: "¡BOOM!",
+            backdrop: "mono",
+            burstColor: "rgba(255, 122, 89, 0.65)",
+            sfxColor: "#ff7a59",
+          },
+        },
+        {
+          name: "Heartbeat",
+          preset: "heartbeat",
+          opts: {
+            image: IMG("storybook-charm"),
+            narrator: "Narrator",
+            narration: "El corazón le golpeaba el pecho como un tambor roto.",
+            backdrop: "sunset",
+          },
+        },
+        {
+          name: "Zoom punch",
+          preset: "zoomPunch",
+          opts: {
+            image: IMG("western-comic"),
+            sfx: "¡ZASS!",
+            sfxColor: "#9fe7ff",
+            flashColor: "rgba(159,231,255,0.6)",
+            backdrop: "cyber",
+          },
+        },
+        {
+          name: "Split screen",
+          preset: "splitScreen",
+          opts: {
+            leftImage: IMG("graphic-noir"),
+            rightImage: IMG("neon-cyberpunk"),
+            leftLabel: "Antes",
+            rightLabel: "Después",
+          },
+        },
+        {
+          name: "Thought bubble",
+          preset: "thought",
+          opts: {
+            image: IMG("pixar-style-3d"),
+            text: "¿y si no vuelve?",
+            backdrop: "paper",
+          },
+        },
+        {
+          name: "Glitch",
+          preset: "glitch",
+          opts: {
+            image: IMG("neon-cyberpunk"),
+            sfx: "ERR://",
+            sfxColor: "#ff5b7a",
+            backdrop: "mono",
+          },
+        },
+        {
+          name: "Typewriter",
+          preset: "typewriter",
+          opts: {
+            image: IMG("graphic-noir"),
+            text: "La lluvia caía como una sentencia. Esa noche nadie durmió.",
+            backdrop: "mono",
+          },
+        },
+        {
+          name: "Comic grid",
+          preset: "comicGrid",
+          opts: {
+            images: [IMG("shonen-anime"), IMG("western-comic"), IMG("black-white-manga")],
+            sfx: "¡POW!",
+            sfxColor: "#ff7a59",
+            backdrop: "paper",
+          },
+        },
+        {
+          name: "News ticker",
+          preset: "ticker",
+          opts: {
+            image: IMG("neon-cyberpunk"),
+            ribbon: "BREAKING",
+            items: [
+              "★ Nuevo efecto disponible",
+              "★ Story Motion Kit v2",
+              "★ Tiempo real · 60fps",
+              "★ Configura y usa",
+              "★ Sin sobre ingeniería",
+            ],
+            backdrop: "cyber",
+          },
+        },
+        {
+          name: "Hero pose",
+          preset: "heroPose",
+          opts: {
+            image: IMG("shonen-anime"),
+            sfx: "¡VAMOS!",
+            sfxColor: "#ffd36a",
+            burstColor: "rgba(255, 211, 106, 0.6)",
+            flashColor: "rgba(255, 211, 106, 0.6)",
+            backdrop: "cyber",
+          },
+        },
+        {
+          name: "Confession",
+          preset: "confession",
+          opts: {
+            image: IMG("sunlit-watercolor"),
+            eyebrow: "Él le dijo",
+            text: "Nunca te mentí, solo dejé de hablar.",
+            meta: "Cap. 14",
+            backdrop: "sunset",
+          },
+        },
+        {
+          name: "Tear drop",
+          preset: "tearDrop",
+          opts: {
+            image: IMG("impressionist-oil"),
+            narrator: "Ella recuerda",
+            narration: "Hacía años que no lloraba. Esa noche lo hizo el jardín por ella.",
+            caption: "el silencio también es una forma de despedida",
+            backdrop: "melancholy",
+          },
+        },
+        {
+          name: "Memory flashback",
+          preset: "memoryFlashback",
+          opts: {
+            image: IMG("impressionist-oil"),
+            captionLabel: "hace mucho tiempo",
+            caption: "Los veranos olían a café y a piano desafinado.",
+            backdrop: "sepia",
+          },
+        },
+        {
+          name: "Rainy day",
+          preset: "rainyDay",
+          opts: {
+            image: IMG("studio-ghibli-pastoral"),
+            narrator: "Narrator",
+            narration: "La ciudad siempre lloraba primero, antes que la gente.",
+            backdrop: "storm",
+          },
+        },
+        {
+          name: "Whisper",
+          preset: "whisper",
+          opts: {
+            image: IMG("ukiyo-e-woodblock"),
+            captionLabel: "susurro",
+            text: "quédate un minuto más, solo un minuto.",
+            backdrop: "mono",
+          },
+        },
+        {
+          name: "Dawn",
+          preset: "dawn",
+          opts: {
+            image: IMG("impressionist-oil"),
+            headline: "Y el cielo se encendió otra vez",
+            backdrop: "dawn",
+          },
+        },
+        {
+          name: "Suspense",
+          preset: "suspense",
+          opts: {
+            image: IMG("graphic-noir"),
+            caption: "alguien estaba del otro lado de la puerta",
+            backdrop: "mono",
+          },
+        },
+        {
+          name: "Letter",
+          preset: "letter",
+          opts: {
+            text: "Querida M,\n\nsi lees esto es que ya no estoy.\nGracias por los domingos.",
+            backdrop: "paper",
+          },
+        },
+        {
+          name: "Montage",
+          preset: "montage",
+          opts: {
+            images: [IMG("arctic-minimal"), IMG("sunlit-watercolor"), IMG("shonen-anime")],
+            captionLabel: "Moodboard",
+            caption: "fragmentos de un verano que nunca existió del todo",
+            backdrop: "night",
+          },
+        },
+        {
+          name: "Jump scare",
+          preset: "jumpScare",
+          opts: {
+            calmImage: IMG("sunlit-watercolor"),
+            scareImage: IMG("graphic-noir"),
+            sfx: "¡AHHH!",
+            sfxColor: "#ff3b4d",
+            flashColor: "rgba(220, 30, 50, 0.85)",
+            triggerAt: 2.8,
+            backdrop: "mono",
+          },
+        },
+        {
+          name: "Shadow stalker",
+          preset: "shadowStalker",
+          opts: {
+            image: IMG("graphic-noir"),
+            caption: "algo se acercaba por el pasillo",
+            backdrop: "storm",
+          },
+        },
+        {
+          name: "Thunder strike",
+          preset: "thunderStrike",
+          opts: {
+            image: IMG("ukiyo-e-woodblock"),
+            sfx: "¡CRACK!",
+            sfxColor: "#cfe3ff",
+            strikes: [1.1, 2.4, 3.9],
+            backdrop: "storm",
+          },
+        },
+        {
+          name: "VHS found footage",
+          preset: "vhs",
+          opts: {
+            image: IMG("16-bit-pixel-art"),
+            captionLabel: "REC · 03:17",
+            caption: "si estás viendo esto, ya es tarde",
+            backdrop: "mono",
+          },
+        },
+        {
+          name: "Red alert",
+          preset: "redAlert",
+          opts: {
+            image: IMG("neon-cyberpunk"),
+            headline: "ALERTA: intrusión detectada",
+            sfx: "ALERT",
+            backdrop: "mono",
+          },
+        },
+        {
+          name: "Nightmare",
+          preset: "nightmare",
+          opts: {
+            image: IMG("claymation-diorama"),
+            caption: "y el techo empezó a respirar",
+            backdrop: "melancholy",
+          },
+        },
+        {
+          name: "Eyes in the dark",
+          preset: "eyesInTheDark",
+          opts: {
+            image: IMG("graphic-noir"),
+            caption: "nunca parpadean primero",
+            cx: 960,
+            cy: 520,
+            gap: 200,
+            backdrop: "storm",
+          },
+        },
+        {
+          name: "Bloody note",
+          preset: "bloodyNote",
+          opts: {
+            text: "no abras la puerta\nesté quien esté del otro lado\nno abras la puerta.",
+            backdrop: "mono",
+          },
+        },
+        {
+          name: "Soft rain",
+          preset: "softRain",
+          opts: {
+            image: IMG("impressionist-oil"),
+            caption: "y llovió toda la tarde sin prisa.",
+            backdrop: "melancholy",
+          },
+        },
+        {
+          name: "TV static",
+          preset: "tvStatic",
+          opts: {
+            image: IMG("neon-cyberpunk"),
+            caption: "transmisión interrumpida · permanezca en casa",
+            captionLabel: "CH 03 · LIVE",
+            cuts: [[1.2, 0.4], [2.5, 0.3], [3.7, 0.5]],
+            backdrop: "mono",
+          },
+        },
+        {
+          name: "Spotlight",
+          preset: "spotlight",
+          opts: {
+            image: IMG("graphic-noir"),
+            headline: "TE ENCONTRÉ.",
+            lightColor: "rgba(255, 240, 180, 0.6)",
+            flareX: 1500,
+            flareY: 120,
+            lightOnAt: 1.1,
+            backdrop: "mono",
+          },
+        },
+        {
+          name: "Glass shatter",
+          preset: "glassShatter",
+          opts: {
+            image: IMG("western-comic"),
+            sfx: "¡CRASH!",
+            sfxColor: "#e8f4ff",
+            triggerAt: 1.8,
+            crackX: 50,
+            crackY: 45,
+            backdrop: "mono",
+          },
+        },
+        {
+          name: "Explosion",
+          preset: "explosion",
+          opts: {
+            image: IMG("shonen-anime"),
+            sfx: "¡BOOOM!",
+            sfxColor: "#ffb347",
+            burstColor: "rgba(255, 160, 60, 0.9)",
+            triggerAt: 1.2,
+            backdrop: "mono",
+          },
+        },
+        {
+          name: "Fire glow",
+          preset: "fireGlow",
+          opts: {
+            image: IMG("studio-ghibli-pastoral"),
+            caption: "el fuego aún recordaba la casa.",
+            backdrop: "storm",
+          },
+        },
+        {
+          name: "Snowfall",
+          preset: "snowfall",
+          opts: {
+            image: IMG("arctic-minimal"),
+            caption: "y la nieve lo cubrió todo — incluso lo que no queríamos olvidar.",
+            backdrop: "melancholy",
+          },
+        },
+        {
+          name: "Neon pulse",
+          preset: "neonPulse",
+          opts: {
+            image: IMG("neon-cyberpunk"),
+            sign: "MOTEL",
+            signColor: "#ff4fc1",
+            neonColor: "rgba(255, 60, 180, 0.55)",
+            backdrop: "cyber",
+          },
+        },
+        {
+          name: "Heat haze",
+          preset: "heatHaze",
+          opts: {
+            image: IMG("sunlit-watercolor"),
+            caption: "el calor doblaba el aire.",
+            backdrop: "sunset",
+          },
+        },
+        {
+          name: "Underwater",
+          preset: "underwater",
+          opts: {
+            image: IMG("studio-ghibli-pastoral"),
+            caption: "y todo sonaba lejos, como bajo el mar.",
+            backdrop: "storm",
+          },
+        },
+        {
+          name: "Confetti",
+          preset: "confetti",
+          opts: {
+            image: IMG("pixar-style-3d"),
+            sfx: "¡LO LOGRÓ!",
+            sfxColor: "#ffd36a",
+            backdrop: "sunset",
+          },
+        },
+        {
+          name: "Portal",
+          preset: "portal",
+          opts: {
+            image: IMG("16-bit-pixel-art"),
+            sfx: "¡ZWAARP!",
+            portalColor: "rgba(140, 220, 255, 0.8)",
+            backdrop: "cyber",
+          },
+        },
+        {
+          name: "Light flicker",
+          preset: "lightFlicker",
+          opts: {
+            image: IMG("graphic-noir"),
+            caption: "la luz sabía algo que nosotros no.",
+            backdrop: "storm",
+          },
+        },
+        {
+          name: "Chase cam",
+          preset: "chaseCam",
+          opts: {
+            image: IMG("shonen-anime"),
+            sfx: "¡CORRE!",
+            sfxColor: "#ff7a59",
+            backdrop: "mono",
+          },
+        },
+        {
+          name: "Wind gust",
+          preset: "windGust",
+          opts: {
+            image: IMG("studio-ghibli-pastoral"),
+            sfx: "¡WHOOOSH!",
+            sfxColor: "#d6e4f0",
+            debrisColor: "rgba(220, 180, 120, 0.9)",
+            backdrop: "storm",
+          },
+        },
+        {
+          name: "Tempest",
+          preset: "tempest",
+          opts: {
+            image: IMG("graphic-noir"),
+            caption: "la tormenta sabía nuestros nombres.",
+            strikes: [1.1, 2.4, 3.7],
+            backdrop: "storm",
+          },
+        },
+        {
+          name: "Sandstorm",
+          preset: "sandstorm",
+          opts: {
+            image: IMG("western-comic"),
+            caption: "el desierto lo envolvió todo en minutos.",
+            backdrop: "sunset",
+          },
+        },
+        {
+          name: "Tornado",
+          preset: "tornado",
+          opts: {
+            image: IMG("storybook-charm"),
+            sfx: "¡RRRRRRR!",
+            sfxColor: "#c8cfd8",
+            funnelX: 820,
+            backdrop: "storm",
+          },
+        },
+        {
+          name: "Raging fire",
+          preset: "ragingFire",
+          opts: {
+            image: IMG("western-comic"),
+            sfx: "¡ARDE!",
+            sfxColor: "#ffb347",
+            backdrop: "mono",
+          },
+        },
+        {
+          name: "Earthquake",
+          preset: "earthquake",
+          opts: {
+            image: IMG("claymation-diorama"),
+            sfx: "¡GRRROOOM!",
+            sfxColor: "#c8c0b0",
+            crackAt: 1.6,
+            backdrop: "mono",
+          },
+        },
+        {
+          name: "Fog roll",
+          preset: "fogRoll",
+          opts: {
+            image: IMG("sunlit-watercolor"),
+            caption: "la niebla llegó primero, después las preguntas.",
+            backdrop: "melancholy",
+          },
+        },
+        {
+          name: "Aurora",
+          preset: "aurora",
+          opts: {
+            image: IMG("arctic-minimal"),
+            caption: "el cielo encendió su lenguaje silencioso.",
+            auroraColor1: "rgba(100, 255, 180, 0.7)",
+            auroraColor2: "rgba(130, 120, 255, 0.55)",
+            backdrop: "night",
+          },
+        },
+        {
+          name: "Falling leaves",
+          preset: "fallingLeaves",
+          opts: {
+            image: IMG("impressionist-oil"),
+            caption: "otra vez octubre, otra vez tú.",
+            backdrop: "sunset",
+          },
+        },
+        {
+          name: "Meteor",
+          preset: "meteor",
+          opts: {
+            image: IMG("neon-cyberpunk"),
+            sfx: "¡IMPACTO!",
+            sfxColor: "#ffc56b",
+            impactAt: 1.5,
+            impactX: 700,
+            impactY: 700,
+            backdrop: "night",
+          },
+        },
+        {
+          name: "Eclipse",
+          preset: "eclipse",
+          opts: {
+            image: IMG("ukiyo-e-woodblock"),
+            caption: "y el mundo se quedó sin sol por un minuto.",
+            eclipseX: 960,
+            eclipseY: 320,
+            backdrop: "night",
+          },
+        },
+        {
+          name: "Page burn",
+          preset: "pageBurn",
+          opts: {
+            image: IMG("impressionist-oil"),
+            caption: "y así, sin más, la página cedió al fuego.",
+            backdrop: "mono",
+          },
+        },
+        {
+          name: "Volcano",
+          preset: "volcano",
+          opts: {
+            image: IMG("claymation-diorama"),
+            sfx: "¡RUGE!",
+            sfxColor: "#ff7a30",
+            backdrop: "storm",
+          },
+        },
+        {
+          name: "Credits",
+          preset: "credits",
+          opts: {
+            eyebrow: "Story Motion Kit",
+            title: "GRACIAS",
+            subtitle: "Escenas configurables · un solo parámetro: el tiempo",
+            backdrop: "sunset",
+          },
+        },
+      ];
+
+      const TOTAL = ROSTER.length * DUR;
+      const pad2 = (n) => String(n).padStart(2, "0");
+      const total2 = pad2(ROSTER.length);
+
+      // Persistent chrome
+      kit.createSurfacePanel(root, {
+        id: "shell",
+        inset: 72,
+        start: 0,
+        duration: TOTAL,
+        trackIndex: 1,
+      });
+      kit.createStampBadge(root, {
+        id: "stamp",
+        text: "Motion kit · Scene library",
+        x: 110, y: 106, rotation: -2,
+        start: 0.4, duration: TOTAL - 0.4,
+        trackIndex: 2,
+      });
+      kit.createChapterMark(root, {
+        id: "chapter",
+        label: "Scene",
+        value: `01 / ${total2}`,
+        x: 1640, y: 102,
+        start: 0.55, duration: TOTAL - 0.55,
+        trackIndex: 3,
+      });
+
+      const tl = gsap.timeline({ paused: true });
+      tl.fromTo("#shell", { opacity: 0 }, { opacity: 1, duration: 0.5 }, 0);
+      tl.fromTo("#stamp", { opacity: 0, y: -10 }, { opacity: 1, y: 0, duration: 0.6 }, 0.4);
+      tl.fromTo("#chapter", { opacity: 0, y: -10 }, { opacity: 1, y: 0, duration: 0.6 }, 0.55);
+
+      // Render every scene from the roster
+      ROSTER.forEach((entry, i) => {
+        const at = i * DUR;
+        const label = `${pad2(i + 1)} · ${entry.name}`;
+        const fn = kit.scenes[entry.preset];
+        if (!fn) {
+          console.warn("Missing preset:", entry.preset);
+          return;
+        }
+        fn(tl, root, Object.assign({ at, duration: DUR, label }, entry.opts));
+
+        // Update chapter ticker at each scene start
+        tl.call(
+          () => {
+            const el = document.querySelector("#chapter .story-chapter-value");
+            if (el) el.textContent = `${pad2(i + 1)} / ${total2}`;
+          },
+          null,
+          at,
+        );
+      });
+
+      tl.to({}, { duration: 0.1 }, TOTAL - 0.1);
+
+      window.__timelines = window.__timelines || {};
+      window.__timelines[compositionId] = tl;
+    </script>
+  </body>
+</html>
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Story Preview Template</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,600;9..144,700&family=Outfit:wght@400;500;600;700&family=JetBrains+Mono:wght@500;600&display=swap"
+      rel="stylesheet"
+    />
+    <style>
+      :root {
+        color-scheme: dark;
+      }
+
+      * {
+        box-sizing: border-box;
+      }
+
+      html,
+      body {
+        margin: 0;
+        width: 100%;
+        height: 100%;
+        overflow: hidden;
+        background: #080c18;
+      }
+
+      body {
+        font-family: "Outfit", system-ui, sans-serif;
+      }
+    </style>
+  </head>
+  <body>
+    <div
+      id="root"
+      class="story-stage"
+      data-composition-id="studio-preview"
+      data-start="0"
+      data-width="1920"
+      data-height="1080"
+    ></div>
+
+    <script src="/hyperframes/story-motion-kit.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@hyperframes/core/dist/hyperframe.runtime.iife.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/gsap@3.14.2/dist/gsap.min.js"></script>
+    <script>
+      const root = document.getElementById("root");
+      const compositionId = root.dataset.compositionId || "studio-preview";
+      const kit = window.storyMotionKit;
+
+      kit.ensureStyles();
+
+      // 14 beats × ~5s → ~70s
+      const DUR = 5;
+      const makeBeats = (names) => {
+        const out = {};
+        names.forEach((name, i) => {
+          out[name] = { start: i * DUR, end: (i + 1) * DUR };
+        });
+        return out;
+      };
+      const BEATS = makeBeats([
+        "intro",        // 01 title + countdown
+        "fullBleed",    // 02 ken burns + halftone
+        "dialogue",     // 03 two photos + speech bubbles (rain bg)
+        "scream",       // 04 scream shake + radial burst
+        "heartbeat",    // 05 heartbeat + vignette (sunset bg)
+        "zoom",         // 06 zoom punch + speed lines (cyber bg)
+        "split",        // 07 split screen + ink slash
+        "thought",      // 08 thought bubble + paper grid bg
+        "glitch",       // 09 glitch + scanlines (mono bg)
+        "typewriter",   // 10 typewriter + grid paper
+        "comic",        // 11 3-panel comic grid
+        "ticker",       // 12 news ticker + ribbon
+        "montage",      // 13 float/swing montage
+        "credits",      // 14 credits + fade
+      ]);
+      const TOTAL = BEATS.credits.end;
+
+      const IMG = (slug) => `/assets/images/style-presets-v2.5/${slug}.png`;
+
+      // --- Persistent chrome ---
+      kit.createSurfacePanel(root, {
+        id: "shell",
+        inset: 72,
+        start: 0,
+        duration: TOTAL,
+        trackIndex: 1,
+      });
+      kit.createStampBadge(root, {
+        id: "stamp",
+        text: "Motion kit · Preview",
+        x: 110,
+        y: 106,
+        rotation: -2,
+        start: 0.4,
+        duration: TOTAL - 0.4,
+        trackIndex: 2,
+      });
+      kit.createChapterMark(root, {
+        id: "chapter",
+        label: "Effect",
+        value: "01 / 14",
+        x: 1640,
+        y: 102,
+        start: 0.55,
+        duration: TOTAL - 0.55,
+        trackIndex: 3,
+      });
+
+      // ============ BEAT 01 · INTRO + COUNTDOWN ============
+      kit.createGradientBackdrop(root, {
+        id: "b1-bg",
+        variant: "night",
+        inset: 72,
+        start: BEATS.intro.start,
+        duration: BEATS.intro.end - BEATS.intro.start,
+        trackIndex: 10,
+      });
+      kit.createHalftoneOverlay(root, {
+        id: "b1-halftone",
+        inset: 72,
+        opacity: 0.14,
+        start: BEATS.intro.start,
+        duration: BEATS.intro.end - BEATS.intro.start,
+        trackIndex: 11,
+      });
+      kit.createActCard(root, {
+        id: "intro-card",
+        eyebrow: "A reusable library",
+        title: "STORY MOTION",
+        subtitle: "Effects · Layouts · Beats",
+        x: 260,
+        y: 200,
+        width: 1400,
+        height: 500,
+        start: BEATS.intro.start,
+        duration: 3.2,
+        trackIndex: 12,
+      });
+      kit.createCountdown(root, {
+        id: "intro-count",
+        text: "3",
+        x: 860,
+        y: 760,
+        width: 200,
+        height: 320,
+        start: BEATS.intro.start + 3.2,
+        duration: 1.6,
+        trackIndex: 13,
+      });
+      kit.createLabelChip(root, {
+        id: "b1-chip",
+        text: "01 · Title + countdown",
+        x: 146,
+        y: 170,
+        start: BEATS.intro.start + 0.3,
+        duration: BEATS.intro.end - BEATS.intro.start - 0.5,
+        trackIndex: 14,
+      });
+
+      // ============ BEAT 02 · FULL BLEED KEN BURNS ============
+      kit.createScenePlate(root, {
+        id: "fb-plate",
+        src: IMG("studio-ghibli-pastoral"),
+        inset: 72,
+        start: BEATS.fullBleed.start,
+        duration: BEATS.fullBleed.end - BEATS.fullBleed.start,
+        trackIndex: 20,
+      });
+      kit.createHalftoneOverlay(root, {
+        id: "fb-halftone",
+        inset: 72,
+        opacity: 0.08,
+        start: BEATS.fullBleed.start,
+        duration: BEATS.fullBleed.end - BEATS.fullBleed.start,
+        trackIndex: 21,
+      });
+      kit.createHeadline(root, {
+        id: "fb-headline",
+        text: "A map no one remembered, waiting on the attic floor.",
+        x: 146,
+        y: 330,
+        width: 1040,
+        start: BEATS.fullBleed.start + 0.4,
+        duration: BEATS.fullBleed.end - BEATS.fullBleed.start - 0.4,
+        trackIndex: 22,
+      });
+      kit.createCaptionBand(root, {
+        id: "fb-caption",
+        text: "The house was asleep. The paper was not.",
+        x: 200,
+        y: 944,
+        width: 1520,
+        start: BEATS.fullBleed.start + 1.2,
+        duration: BEATS.fullBleed.end - BEATS.fullBleed.start - 1.4,
+        trackIndex: 23,
+      });
+      kit.createLabelChip(root, {
+        id: "fb-chip",
+        text: "02 · Full-bleed · Ken Burns",
+        x: 146,
+        y: 170,
+        start: BEATS.fullBleed.start + 0.3,
+        duration: BEATS.fullBleed.end - BEATS.fullBleed.start - 0.5,
+        trackIndex: 24,
+      });
+
+      // ============ BEAT 03 · DIALOGUE · rain backdrop ============
+      kit.createGradientBackdrop(root, {
+        id: "d-bg",
+        variant: "night",
+        inset: 72,
+        start: BEATS.dialogue.start,
+        duration: BEATS.dialogue.end - BEATS.dialogue.start,
+        trackIndex: 30,
+      });
+      kit.createRainLines(root, {
+        id: "d-rain",
+        inset: 72,
+        start: BEATS.dialogue.start,
+        duration: BEATS.dialogue.end - BEATS.dialogue.start,
+        trackIndex: 31,
+      });
+      kit.createPhotoPanel(root, {
+        id: "d-left",
+        src: IMG("storybook-charm"),
+        caption: "Mara · 9",
+        x: 140,
+        y: 220,
+        width: 680,
+        height: 720,
+        rotation: -2,
+        start: BEATS.dialogue.start,
+        duration: BEATS.dialogue.end - BEATS.dialogue.start,
+        trackIndex: 32,
+      });
+      kit.createPhotoPanel(root, {
+        id: "d-right",
+        src: IMG("sunlit-watercolor"),
+        caption: "Grandma",
+        x: 1100,
+        y: 220,
+        width: 680,
+        height: 720,
+        rotation: 2,
+        start: BEATS.dialogue.start + 0.4,
+        duration: BEATS.dialogue.end - BEATS.dialogue.start - 0.4,
+        trackIndex: 33,
+      });
+      kit.createSpeechBubble(root, {
+        id: "d-bubble-1",
+        text: "Is the drawing really breathing?",
+        tail: "left",
+        x: 196,
+        y: 760,
+        width: 520,
+        start: BEATS.dialogue.start + 1.1,
+        duration: 2.2,
+        trackIndex: 34,
+      });
+      kit.createSpeechBubble(root, {
+        id: "d-bubble-2",
+        text: "It is waiting for you, child.",
+        tail: "right",
+        x: 1160,
+        y: 760,
+        width: 520,
+        start: BEATS.dialogue.start + 3.3,
+        duration: 1.5,
+        trackIndex: 35,
+      });
+      kit.createLabelChip(root, {
+        id: "d-chip",
+        text: "03 · Dialogue · Rain backdrop",
+        x: 146,
+        y: 170,
+        start: BEATS.dialogue.start + 0.3,
+        duration: BEATS.dialogue.end - BEATS.dialogue.start - 0.5,
+        trackIndex: 36,
+      });
+
+      // ============ BEAT 04 · SCREAM + RADIAL BURST ============
+      kit.createGradientBackdrop(root, {
+        id: "sc-bg",
+        variant: "mono",
+        inset: 72,
+        start: BEATS.scream.start,
+        duration: BEATS.scream.end - BEATS.scream.start,
+        trackIndex: 40,
+      });
+      kit.createRadialBurst(root, {
+        id: "sc-burst",
+        inset: 72,
+        color: "rgba(255, 122, 89, 0.62)",
+        inner: 120,
+        outer: 720,
+        cx: 68,
+        cy: 48,
+        start: BEATS.scream.start + 1.1,
+        duration: 2.6,
+        trackIndex: 41,
+      });
+      kit.createPhotoPanel(root, {
+        id: "sc-photo",
+        src: IMG("shonen-anime"),
+        x: 520,
+        y: 200,
+        width: 880,
+        height: 720,
+        start: BEATS.scream.start,
+        duration: BEATS.scream.end - BEATS.scream.start,
+        trackIndex: 42,
+      });
+      kit.createSpeechBubble(root, {
+        id: "sc-shout",
+        variant: "shout",
+        tail: "bottom",
+        text: "¡ESPERA!",
+        x: 200,
+        y: 250,
+        width: 360,
+        start: BEATS.scream.start + 0.6,
+        duration: 3.8,
+        trackIndex: 43,
+      });
+      kit.createSfxBurst(root, {
+        id: "sc-sfx",
+        text: "BOOM!",
+        x: 1320,
+        y: 700,
+        rotation: -8,
+        fontSize: 156,
+        color: "#ff7a59",
+        start: BEATS.scream.start + 1.3,
+        duration: 2.2,
+        trackIndex: 44,
+      });
+      kit.createLabelChip(root, {
+        id: "sc-chip",
+        text: "04 · Scream shake + radial burst",
+        x: 146,
+        y: 170,
+        start: BEATS.scream.start + 0.3,
+        duration: BEATS.scream.end - BEATS.scream.start - 0.5,
+        trackIndex: 45,
+      });
+
+      // ============ BEAT 05 · HEARTBEAT + VIGNETTE ============
+      kit.createGradientBackdrop(root, {
+        id: "hb-bg",
+        variant: "sunset",
+        inset: 72,
+        start: BEATS.heartbeat.start,
+        duration: BEATS.heartbeat.end - BEATS.heartbeat.start,
+        trackIndex: 50,
+      });
+      kit.createVignette(root, {
+        id: "hb-vig",
+        inset: 72,
+        start: BEATS.heartbeat.start,
+        duration: BEATS.heartbeat.end - BEATS.heartbeat.start,
+        trackIndex: 51,
+      });
+      kit.createPhotoPanel(root, {
+        id: "hb-photo",
+        src: IMG("impressionist-oil"),
+        x: 620,
+        y: 220,
+        width: 680,
+        height: 680,
+        start: BEATS.heartbeat.start,
+        duration: BEATS.heartbeat.end - BEATS.heartbeat.start,
+        trackIndex: 52,
+      });
+      kit.createNarrationBox(root, {
+        id: "hb-narr",
+        label: "Narrator",
+        text: "Her heart remembered the path before her feet did.",
+        x: 186,
+        y: 720,
+        width: 400,
+        rotation: -3,
+        start: BEATS.heartbeat.start + 0.9,
+        duration: 3.4,
+        trackIndex: 53,
+      });
+      kit.createLabelChip(root, {
+        id: "hb-chip",
+        text: "05 · Heartbeat + vignette",
+        x: 146,
+        y: 170,
+        start: BEATS.heartbeat.start + 0.3,
+        duration: BEATS.heartbeat.end - BEATS.heartbeat.start - 0.5,
+        trackIndex: 54,
+      });
+
+      // ============ BEAT 06 · ZOOM PUNCH + SPEED LINES ============
+      kit.createGradientBackdrop(root, {
+        id: "zp-bg",
+        variant: "cyber",
+        inset: 72,
+        start: BEATS.zoom.start,
+        duration: BEATS.zoom.end - BEATS.zoom.start,
+        trackIndex: 60,
+      });
+      kit.createPhotoPanel(root, {
+        id: "zp-photo",
+        src: IMG("neon-cyberpunk"),
+        x: 520,
+        y: 200,
+        width: 880,
+        height: 720,
+        start: BEATS.zoom.start,
+        duration: BEATS.zoom.end - BEATS.zoom.start,
+        trackIndex: 61,
+      });
+      kit.createSpeedLines(root, {
+        id: "zp-speed",
+        inset: 72,
+        start: BEATS.zoom.start + 0.6,
+        duration: 3,
+        trackIndex: 62,
+      });
+      kit.createSfxBurst(root, {
+        id: "zp-sfx",
+        text: "ZAP!",
+        x: 1380,
+        y: 280,
+        rotation: 6,
+        fontSize: 148,
+        color: "#9fe7ff",
+        start: BEATS.zoom.start + 1.3,
+        duration: 2,
+        trackIndex: 63,
+      });
+      kit.createLabelChip(root, {
+        id: "zp-chip",
+        text: "06 · Zoom punch + speed lines",
+        x: 146,
+        y: 170,
+        start: BEATS.zoom.start + 0.3,
+        duration: BEATS.zoom.end - BEATS.zoom.start - 0.5,
+        trackIndex: 64,
+      });
+
+      // ============ BEAT 07 · SPLIT + INK SLASH ============
+      kit.createSplitPanel(root, {
+        id: "sp-a",
+        src: IMG("graphic-noir"),
+        label: "Before",
+        x: 72,
+        y: 72,
+        width: 888,
+        height: 936,
+        start: BEATS.split.start,
+        duration: BEATS.split.end - BEATS.split.start,
+        trackIndex: 70,
+      });
+      kit.createSplitPanel(root, {
+        id: "sp-b",
+        src: IMG("risograph-poster"),
+        label: "After",
+        x: 960,
+        y: 72,
+        width: 888,
+        height: 936,
+        start: BEATS.split.start + 0.2,
+        duration: BEATS.split.end - BEATS.split.start - 0.2,
+        trackIndex: 71,
+      });
+      kit.createInkSlash(root, {
+        id: "sp-slash",
+        x: 760,
+        y: 60,
+        width: 400,
+        height: 960,
+        start: BEATS.split.start + 0.6,
+        duration: BEATS.split.end - BEATS.split.start - 0.8,
+        trackIndex: 72,
+      });
+      kit.createLabelChip(root, {
+        id: "sp-chip",
+        text: "07 · Split screen + ink slash",
+        x: 146,
+        y: 170,
+        start: BEATS.split.start + 0.3,
+        duration: BEATS.split.end - BEATS.split.start - 0.5,
+        trackIndex: 73,
+      });
+
+      // ============ BEAT 08 · THOUGHT BUBBLE + GRID PAPER ============
+      kit.createGradientBackdrop(root, {
+        id: "tb-bg",
+        variant: "paper",
+        inset: 72,
+        start: BEATS.thought.start,
+        duration: BEATS.thought.end - BEATS.thought.start,
+        trackIndex: 80,
+      });
+      kit.createGridPaper(root, {
+        id: "tb-grid",
+        inset: 72,
+        size: 64,
+        start: BEATS.thought.start,
+        duration: BEATS.thought.end - BEATS.thought.start,
+        trackIndex: 81,
+      });
+      kit.createPhotoPanel(root, {
+        id: "tb-photo",
+        src: IMG("studio-ghibli-pastoral"),
+        x: 160,
+        y: 240,
+        width: 720,
+        height: 680,
+        rotation: -2,
+        start: BEATS.thought.start,
+        duration: BEATS.thought.end - BEATS.thought.start,
+        trackIndex: 82,
+      });
+      kit.createThoughtBubble(root, {
+        id: "tb-bubble",
+        text: "What if the map is only remembering me?",
+        x: 1000,
+        y: 340,
+        width: 720,
+        start: BEATS.thought.start + 0.8,
+        duration: 3.6,
+        trackIndex: 83,
+      });
+      kit.createLabelChip(root, {
+        id: "tb-chip",
+        text: "08 · Thought bubble + grid paper",
+        x: 146,
+        y: 170,
+        start: BEATS.thought.start + 0.3,
+        duration: BEATS.thought.end - BEATS.thought.start - 0.5,
+        trackIndex: 84,
+      });
+
+      // ============ BEAT 09 · GLITCH + SCANLINES ============
+      kit.createGradientBackdrop(root, {
+        id: "gl-bg",
+        variant: "mono",
+        inset: 72,
+        start: BEATS.glitch.start,
+        duration: BEATS.glitch.end - BEATS.glitch.start,
+        trackIndex: 90,
+      });
+      kit.createPhotoPanel(root, {
+        id: "gl-photo",
+        src: IMG("black-white-manga"),
+        x: 520,
+        y: 200,
+        width: 880,
+        height: 720,
+        start: BEATS.glitch.start,
+        duration: BEATS.glitch.end - BEATS.glitch.start,
+        trackIndex: 91,
+      });
+      kit.createScanlines(root, {
+        id: "gl-scan",
+        inset: 72,
+        start: BEATS.glitch.start,
+        duration: BEATS.glitch.end - BEATS.glitch.start,
+        trackIndex: 92,
+      });
+      kit.createFilmGrain(root, {
+        id: "gl-grain",
+        inset: 72,
+        start: BEATS.glitch.start,
+        duration: BEATS.glitch.end - BEATS.glitch.start,
+        trackIndex: 93,
+      });
+      kit.createSfxBurst(root, {
+        id: "gl-sfx",
+        text: "SIGNAL LOST",
+        x: 1200,
+        y: 800,
+        rotation: -3,
+        fontSize: 96,
+        color: "#ff5b7a",
+        start: BEATS.glitch.start + 1,
+        duration: 2.2,
+        trackIndex: 94,
+      });
+      kit.createLabelChip(root, {
+        id: "gl-chip",
+        text: "09 · Glitch + scanlines + grain",
+        x: 146,
+        y: 170,
+        start: BEATS.glitch.start + 0.3,
+        duration: BEATS.glitch.end - BEATS.glitch.start - 0.5,
+        trackIndex: 95,
+      });
+
+      // ============ BEAT 10 · TYPEWRITER + GRID PAPER ============
+      kit.createGradientBackdrop(root, {
+        id: "tw-bg",
+        variant: "mono",
+        inset: 72,
+        start: BEATS.typewriter.start,
+        duration: BEATS.typewriter.end - BEATS.typewriter.start,
+        trackIndex: 100,
+      });
+      kit.createGridPaper(root, {
+        id: "tw-grid",
+        inset: 72,
+        size: 48,
+        opacity: 0.6,
+        start: BEATS.typewriter.start,
+        duration: BEATS.typewriter.end - BEATS.typewriter.start,
+        trackIndex: 101,
+      });
+      kit.createPhotoPanel(root, {
+        id: "tw-photo",
+        src: IMG("16-bit-pixel-art"),
+        x: 140,
+        y: 250,
+        width: 620,
+        height: 580,
+        rotation: -2,
+        start: BEATS.typewriter.start,
+        duration: BEATS.typewriter.end - BEATS.typewriter.start,
+        trackIndex: 102,
+      });
+      kit.createTypewriter(root, {
+        id: "tw-text",
+        text: "> LOG_0042\nThe engine hums.\nThe cursor waits.",
+        x: 840,
+        y: 340,
+        width: 920,
+        height: 400,
+        fontSize: 44,
+        start: BEATS.typewriter.start + 0.6,
+        duration: BEATS.typewriter.end - BEATS.typewriter.start - 0.8,
+        trackIndex: 103,
+      });
+      kit.createLabelChip(root, {
+        id: "tw-chip",
+        text: "10 · Typewriter text",
+        x: 146,
+        y: 170,
+        start: BEATS.typewriter.start + 0.3,
+        duration: BEATS.typewriter.end - BEATS.typewriter.start - 0.5,
+        trackIndex: 104,
+      });
+
+      // ============ BEAT 11 · COMIC GRID ============
+      kit.createGradientBackdrop(root, {
+        id: "cm-bg",
+        variant: "paper",
+        inset: 72,
+        start: BEATS.comic.start,
+        duration: BEATS.comic.end - BEATS.comic.start,
+        trackIndex: 110,
+      });
+      kit.createComicPanel(root, {
+        id: "cm-1",
+        src: IMG("western-comic"),
+        x: 140,
+        y: 220,
+        width: 520,
+        height: 420,
+        rotation: -3,
+        start: BEATS.comic.start,
+        duration: BEATS.comic.end - BEATS.comic.start,
+        trackIndex: 111,
+      });
+      kit.createComicPanel(root, {
+        id: "cm-2",
+        src: IMG("shonen-anime"),
+        x: 700,
+        y: 260,
+        width: 520,
+        height: 500,
+        rotation: 2,
+        start: BEATS.comic.start + 0.15,
+        duration: BEATS.comic.end - BEATS.comic.start - 0.15,
+        trackIndex: 112,
+      });
+      kit.createComicPanel(root, {
+        id: "cm-3",
+        src: IMG("pixar-style-3d"),
+        x: 1260,
+        y: 220,
+        width: 520,
+        height: 420,
+        rotation: -2,
+        start: BEATS.comic.start + 0.3,
+        duration: BEATS.comic.end - BEATS.comic.start - 0.3,
+        trackIndex: 113,
+      });
+      kit.createSfxBurst(root, {
+        id: "cm-sfx",
+        text: "WHAM",
+        x: 780,
+        y: 760,
+        rotation: -4,
+        fontSize: 140,
+        color: "#ff7a59",
+        start: BEATS.comic.start + 1.6,
+        duration: 1.8,
+        trackIndex: 114,
+      });
+      kit.createLabelChip(root, {
+        id: "cm-chip",
+        text: "11 · Comic grid (3 panels)",
+        x: 146,
+        y: 170,
+        start: BEATS.comic.start + 0.3,
+        duration: BEATS.comic.end - BEATS.comic.start - 0.5,
+        trackIndex: 115,
+      });
+
+      // ============ BEAT 12 · TICKER + RIBBON ============
+      kit.createGradientBackdrop(root, {
+        id: "tk-bg",
+        variant: "cyber",
+        inset: 72,
+        start: BEATS.ticker.start,
+        duration: BEATS.ticker.end - BEATS.ticker.start,
+        trackIndex: 120,
+      });
+      kit.createScanlines(root, {
+        id: "tk-scan",
+        inset: 72,
+        opacity: 0.25,
+        start: BEATS.ticker.start,
+        duration: BEATS.ticker.end - BEATS.ticker.start,
+        trackIndex: 121,
+      });
+      kit.createPhotoPanel(root, {
+        id: "tk-photo",
+        src: IMG("neon-cyberpunk"),
+        x: 260,
+        y: 240,
+        width: 1400,
+        height: 520,
+        start: BEATS.ticker.start,
+        duration: BEATS.ticker.end - BEATS.ticker.start,
+        trackIndex: 122,
+      });
+      kit.createTagRibbon(root, {
+        id: "tk-ribbon",
+        text: "BREAKING",
+        x: 180,
+        y: 200,
+        width: 220,
+        start: BEATS.ticker.start + 0.3,
+        duration: BEATS.ticker.end - BEATS.ticker.start - 0.5,
+        trackIndex: 123,
+      });
+      kit.createTicker(root, {
+        id: "tk-ticker",
+        items: [
+          "MIDNIGHT STATIC",
+          "SIGNAL SPOTTED OVER DISTRICT 07",
+          "MAP REFUSES TO STAY CLOSED",
+          "REWARD · ONE FORGOTTEN AFTERNOON",
+          "STAY TUNED",
+        ],
+        x: 72,
+        y: 820,
+        width: 1776,
+        height: 72,
+        start: BEATS.ticker.start + 0.4,
+        duration: BEATS.ticker.end - BEATS.ticker.start - 0.4,
+        trackIndex: 124,
+      });
+      kit.createLabelChip(root, {
+        id: "tk-chip",
+        text: "12 · News ticker + ribbon",
+        x: 146,
+        y: 170,
+        start: BEATS.ticker.start + 0.3,
+        duration: BEATS.ticker.end - BEATS.ticker.start - 0.5,
+        trackIndex: 125,
+      });
+
+      // ============ BEAT 13 · MONTAGE float/swing ============
+      kit.createGradientBackdrop(root, {
+        id: "mn-bg",
+        variant: "night",
+        inset: 72,
+        start: BEATS.montage.start,
+        duration: BEATS.montage.end - BEATS.montage.start,
+        trackIndex: 130,
+      });
+      kit.createFilmGrain(root, {
+        id: "mn-grain",
+        inset: 72,
+        opacity: 0.3,
+        start: BEATS.montage.start,
+        duration: BEATS.montage.end - BEATS.montage.start,
+        trackIndex: 131,
+      });
+      kit.createPhotoPanel(root, {
+        id: "mn-1",
+        src: IMG("ukiyo-e-woodblock"),
+        x: 180,
+        y: 260,
+        width: 440,
+        height: 560,
+        rotation: -5,
+        start: BEATS.montage.start,
+        duration: BEATS.montage.end - BEATS.montage.start,
+        trackIndex: 132,
+      });
+      kit.createPhotoPanel(root, {
+        id: "mn-2",
+        src: IMG("claymation-diorama"),
+        x: 740,
+        y: 220,
+        width: 440,
+        height: 640,
+        rotation: 3,
+        start: BEATS.montage.start + 0.25,
+        duration: BEATS.montage.end - BEATS.montage.start - 0.25,
+        trackIndex: 133,
+      });
+      kit.createPhotoPanel(root, {
+        id: "mn-3",
+        src: IMG("arctic-minimal"),
+        x: 1300,
+        y: 260,
+        width: 440,
+        height: 560,
+        rotation: -2,
+        start: BEATS.montage.start + 0.5,
+        duration: BEATS.montage.end - BEATS.montage.start - 0.5,
+        trackIndex: 134,
+      });
+      kit.createCaptionBubble(root, {
+        id: "mn-caption",
+        label: "Moodboard",
+        text: "Float. Swing. Drift. The library knows how to breathe.",
+        x: 460,
+        y: 880,
+        width: 1000,
+        start: BEATS.montage.start + 1.2,
+        duration: BEATS.montage.end - BEATS.montage.start - 1.4,
+        trackIndex: 135,
+      });
+      kit.createLabelChip(root, {
+        id: "mn-chip",
+        text: "13 · Float + swing montage",
+        x: 146,
+        y: 170,
+        start: BEATS.montage.start + 0.3,
+        duration: BEATS.montage.end - BEATS.montage.start - 0.5,
+        trackIndex: 136,
+      });
+
+      // ============ BEAT 14 · CREDITS (blur-in) ============
+      kit.createGradientBackdrop(root, {
+        id: "cr-bg",
+        variant: "sunset",
+        inset: 72,
+        start: BEATS.credits.start,
+        duration: BEATS.credits.end - BEATS.credits.start,
+        trackIndex: 140,
+      });
+      kit.createVignette(root, {
+        id: "cr-vig",
+        inset: 72,
+        start: BEATS.credits.start,
+        duration: BEATS.credits.end - BEATS.credits.start,
+        trackIndex: 141,
+      });
+      kit.createActCard(root, {
+        id: "cr-card",
+        eyebrow: "Chapter 01",
+        title: "To be continued",
+        subtitle: "01 of 04",
+        x: 360,
+        y: 320,
+        width: 1200,
+        height: 440,
+        start: BEATS.credits.start + 0.2,
+        duration: BEATS.credits.end - BEATS.credits.start - 0.2,
+        trackIndex: 142,
+      });
+      kit.createLabelChip(root, {
+        id: "cr-chip",
+        text: "14 · Credits · Blur in",
+        x: 146,
+        y: 170,
+        start: BEATS.credits.start + 0.3,
+        duration: BEATS.credits.end - BEATS.credits.start - 0.5,
+        trackIndex: 143,
+      });
+
+      // ==============================================
+      window.__timelines = window.__timelines || {};
+      const tl = gsap.timeline({ paused: true });
+
+      tl.from("#shell", { opacity: 0, scale: 0.985, duration: 0.7, ease: "power2.out" }, 0);
+      kit.animateReveal(tl, "#stamp", { at: 0.4, x: -14, duration: 0.5 });
+      kit.animateReveal(tl, "#chapter", { at: 0.55, x: 22, duration: 0.5 });
+
+      function updateChapter(at, value) {
+        tl.call(() => {
+          const node = document.querySelector("#chapter .story-chapter-value");
+          if (node) node.textContent = value;
+        }, null, at);
+      }
+
+      // ---------- Beat 01
+      tl.fromTo("#b1-bg", { opacity: 0 }, { opacity: 1, duration: 0.5 }, BEATS.intro.start);
+      tl.fromTo("#b1-halftone", { opacity: 0 }, { opacity: 0.14, duration: 0.6 }, BEATS.intro.start + 0.1);
+      kit.animateSpin(tl, "#intro-card", { at: BEATS.intro.start + 0.2, from: -4, duration: 0.9 });
+      kit.animateReveal(tl, "#b1-chip", { at: BEATS.intro.start + 0.3, x: -16, duration: 0.5 });
+      // Countdown numbers 3→2→1
+      tl.call(() => {
+        const el = document.querySelector("#intro-count");
+        if (el) el.textContent = "3";
+      }, null, BEATS.intro.start + 3.2);
+      kit.animateBounceIn(tl, "#intro-count", { at: BEATS.intro.start + 3.2, duration: 0.4 });
+      tl.call(() => {
+        const el = document.querySelector("#intro-count");
+        if (el) el.textContent = "2";
+      }, null, BEATS.intro.start + 3.75);
+      tl.fromTo("#intro-count", { scale: 1.3, opacity: 0.4 }, { scale: 1, opacity: 1, duration: 0.3, ease: "power3.out" }, BEATS.intro.start + 3.75);
+      tl.call(() => {
+        const el = document.querySelector("#intro-count");
+        if (el) el.textContent = "1";
+      }, null, BEATS.intro.start + 4.2);
+      tl.fromTo("#intro-count", { scale: 1.3, opacity: 0.4 }, { scale: 1, opacity: 1, duration: 0.3, ease: "power3.out" }, BEATS.intro.start + 4.2);
+      kit.animateFadeOut(tl, ["#intro-card", "#intro-count", "#b1-chip", "#b1-bg", "#b1-halftone"], { at: BEATS.intro.end - 0.3, duration: 0.3 });
+
+      // ---------- Beat 02
+      updateChapter(BEATS.fullBleed.start, "02 / 14");
+      kit.animateWipeReveal(tl, "#fb-plate", { at: BEATS.fullBleed.start, direction: "left", duration: 0.9 });
+      tl.fromTo("#fb-halftone", { opacity: 0 }, { opacity: 0.08, duration: 0.7 }, BEATS.fullBleed.start + 0.3);
+      kit.animateKenBurns(tl, "#fb-plate", { at: BEATS.fullBleed.start + 0.9, duration: 4, fromScale: 1, toScale: 1.1, toX: -30, toY: -12 });
+      kit.animateReveal(tl, "#fb-headline", { at: BEATS.fullBleed.start + 0.6, y: 40, duration: 0.8 });
+      kit.animateReveal(tl, "#fb-caption", { at: BEATS.fullBleed.start + 1.2, y: 18, duration: 0.6 });
+      kit.animateReveal(tl, "#fb-chip", { at: BEATS.fullBleed.start + 0.3, x: -16, duration: 0.5 });
+      kit.animateFadeOut(tl, ["#fb-plate", "#fb-halftone", "#fb-headline", "#fb-caption", "#fb-chip"], { at: BEATS.fullBleed.end - 0.4, duration: 0.4 });
+
+      // ---------- Beat 03
+      updateChapter(BEATS.dialogue.start, "03 / 14");
+      tl.fromTo("#d-bg", { opacity: 0 }, { opacity: 1, duration: 0.4 }, BEATS.dialogue.start);
+      tl.fromTo("#d-rain", { opacity: 0 }, { opacity: 0.5, duration: 0.5 }, BEATS.dialogue.start + 0.2);
+      // rain lines drift
+      tl.to("#d-rain", { backgroundPositionY: "140px", duration: 4, ease: "none" }, BEATS.dialogue.start + 0.2);
+      kit.animateSlideIn(tl, "#d-left", { at: BEATS.dialogue.start, from: "left", distance: 180, duration: 0.7 });
+      kit.animateSlideIn(tl, "#d-right", { at: BEATS.dialogue.start + 0.3, from: "right", distance: 180, duration: 0.7 });
+      kit.animateReveal(tl, "#d-chip", { at: BEATS.dialogue.start + 0.3, x: -16, duration: 0.5 });
+      kit.animateBounceIn(tl, "#d-bubble-1", { at: BEATS.dialogue.start + 1.1, from: 24, duration: 0.5 });
+      kit.animateFadeOut(tl, "#d-bubble-1", { at: BEATS.dialogue.start + 3.2, duration: 0.3 });
+      kit.animateBounceIn(tl, "#d-bubble-2", { at: BEATS.dialogue.start + 3.35, from: 24, duration: 0.5 });
+      tl.to("#d-left", { y: -8, duration: 2.4, ease: "sine.inOut", yoyo: true, repeat: 1 }, BEATS.dialogue.start + 0.8);
+      tl.to("#d-right", { y: 8, duration: 2.4, ease: "sine.inOut", yoyo: true, repeat: 1 }, BEATS.dialogue.start + 0.8);
+      kit.animateFadeOut(tl, ["#d-left", "#d-right", "#d-bubble-2", "#d-chip", "#d-bg", "#d-rain"], { at: BEATS.dialogue.end - 0.4, duration: 0.4 });
+
+      // ---------- Beat 04
+      updateChapter(BEATS.scream.start, "04 / 14");
+      tl.fromTo("#sc-bg", { opacity: 0 }, { opacity: 1, duration: 0.3 }, BEATS.scream.start);
+      kit.animateReveal(tl, "#sc-photo", { at: BEATS.scream.start, scale: 1.08, duration: 0.6 });
+      kit.animateReveal(tl, "#sc-chip", { at: BEATS.scream.start + 0.3, x: -16, duration: 0.5 });
+      kit.animateSpin(tl, "#sc-shout", { at: BEATS.scream.start + 0.7, from: -12, duration: 0.45 });
+      kit.animateBurstExpand(tl, "#sc-burst", { at: BEATS.scream.start + 1.1, scale: 1.1, duration: 0.4, fade: false });
+      kit.animateScreamShake(tl, "#sc-photo", { at: BEATS.scream.start + 1.1, amplitude: 16, duration: 0.7 });
+      kit.animateScreamShake(tl, "#sc-shout", { at: BEATS.scream.start + 1.1, amplitude: 10, duration: 0.7 });
+      kit.animateReveal(tl, "#sc-sfx", { at: BEATS.scream.start + 1.3, scale: 0.4, duration: 0.3, ease: "back.out(2.4)" });
+      kit.animateShake(tl, "#sc-sfx", { at: BEATS.scream.start + 1.65, amplitude: 12, duration: 0.06, repeat: 5 });
+      kit.animateFadeOut(tl, ["#sc-photo", "#sc-shout", "#sc-sfx", "#sc-chip", "#sc-bg", "#sc-burst"], { at: BEATS.scream.end - 0.4, duration: 0.4 });
+
+      // ---------- Beat 05
+      updateChapter(BEATS.heartbeat.start, "05 / 14");
+      tl.fromTo("#hb-bg", { opacity: 0 }, { opacity: 1, duration: 0.4 }, BEATS.heartbeat.start);
+      tl.fromTo("#hb-vig", { opacity: 0 }, { opacity: 1, duration: 0.6 }, BEATS.heartbeat.start + 0.2);
+      kit.animateBlurIn(tl, "#hb-photo", { at: BEATS.heartbeat.start, duration: 0.7 });
+      kit.animateReveal(tl, "#hb-chip", { at: BEATS.heartbeat.start + 0.3, x: -16, duration: 0.5 });
+      kit.animateSpin(tl, "#hb-narr", { at: BEATS.heartbeat.start + 0.9, from: -3, duration: 0.5 });
+      kit.animateHeartbeat(tl, "#hb-photo", { at: BEATS.heartbeat.start + 1.4, scale: 1.06 });
+      kit.animateHeartbeat(tl, "#hb-photo", { at: BEATS.heartbeat.start + 2.6, scale: 1.07 });
+      kit.animateHeartbeat(tl, "#hb-photo", { at: BEATS.heartbeat.start + 3.7, scale: 1.05 });
+      kit.animateFadeOut(tl, ["#hb-photo", "#hb-narr", "#hb-chip", "#hb-bg", "#hb-vig"], { at: BEATS.heartbeat.end - 0.4, duration: 0.4 });
+
+      // ---------- Beat 06
+      updateChapter(BEATS.zoom.start, "06 / 14");
+      tl.fromTo("#zp-bg", { opacity: 0 }, { opacity: 1, duration: 0.4 }, BEATS.zoom.start);
+      kit.animateReveal(tl, "#zp-photo", { at: BEATS.zoom.start, scale: 0.85, duration: 0.6 });
+      kit.animateReveal(tl, "#zp-chip", { at: BEATS.zoom.start + 0.3, x: -16, duration: 0.5 });
+      // speed lines fly in & rotate
+      tl.fromTo("#zp-speed", { opacity: 0, scale: 0.6 }, { opacity: 0.8, scale: 1, duration: 0.4, ease: "power2.out" }, BEATS.zoom.start + 0.6);
+      tl.to("#zp-speed", { rotation: 24, duration: 2.4, ease: "none" }, BEATS.zoom.start + 0.6);
+      kit.animateZoomPunch(tl, "#zp-photo", { at: BEATS.zoom.start + 1.2, scale: 1.22 });
+      kit.animateColorFlash(tl, "#zp-photo", { at: BEATS.zoom.start + 1.2, color: "rgba(159,231,255,0.6)" });
+      kit.animateBounceIn(tl, "#zp-sfx", { at: BEATS.zoom.start + 1.3, from: 40, duration: 0.5 });
+      kit.animateVibrate(tl, "#zp-sfx", { at: BEATS.zoom.start + 1.8, amplitude: 3, repeat: 18 });
+      kit.animateZoomPunch(tl, "#zp-photo", { at: BEATS.zoom.start + 2.8, scale: 1.15 });
+      kit.animateFadeOut(tl, ["#zp-photo", "#zp-speed", "#zp-sfx", "#zp-chip", "#zp-bg"], { at: BEATS.zoom.end - 0.4, duration: 0.4 });
+
+      // ---------- Beat 07
+      updateChapter(BEATS.split.start, "07 / 14");
+      kit.animateWipeReveal(tl, "#sp-a", { at: BEATS.split.start, direction: "left", duration: 0.8 });
+      kit.animateWipeReveal(tl, "#sp-b", { at: BEATS.split.start + 0.35, direction: "right", duration: 0.8 });
+      kit.animateReveal(tl, "#sp-chip", { at: BEATS.split.start + 0.3, x: -16, duration: 0.5 });
+      tl.fromTo("#sp-slash", { opacity: 0, scale: 0.6 }, { opacity: 0.35, scale: 1, duration: 0.3, ease: "power3.out" }, BEATS.split.start + 0.6);
+      kit.animateKenBurns(tl, "#sp-a", { at: BEATS.split.start + 1, duration: 3.4, fromScale: 1, toScale: 1.08, toX: 14 });
+      kit.animateKenBurns(tl, "#sp-b", { at: BEATS.split.start + 1, duration: 3.4, fromScale: 1, toScale: 1.08, toX: -14 });
+      kit.animateColorFlash(tl, "#sp-b", { at: BEATS.split.start + 2.8, color: "rgba(255,211,106,0.55)" });
+      kit.animateFadeOut(tl, ["#sp-a", "#sp-b", "#sp-slash", "#sp-chip"], { at: BEATS.split.end - 0.4, duration: 0.4 });
+
+      // ---------- Beat 08
+      updateChapter(BEATS.thought.start, "08 / 14");
+      tl.fromTo("#tb-bg", { opacity: 0 }, { opacity: 1, duration: 0.4 }, BEATS.thought.start);
+      tl.fromTo("#tb-grid", { opacity: 0 }, { opacity: 1, duration: 0.5 }, BEATS.thought.start + 0.1);
+      kit.animateSlideIn(tl, "#tb-photo", { at: BEATS.thought.start, from: "left", distance: 160, duration: 0.7 });
+      kit.animateReveal(tl, "#tb-chip", { at: BEATS.thought.start + 0.3, x: -16, duration: 0.5 });
+      kit.animateBounceIn(tl, "#tb-bubble", { at: BEATS.thought.start + 0.9, from: 30, duration: 0.6 });
+      kit.animateFloat(tl, "#tb-bubble", { at: BEATS.thought.start + 1.6, y: -10, duration: 1.4, repeat: 1 });
+      kit.animateSwing(tl, "#tb-photo", { at: BEATS.thought.start + 1.2, angle: 2, duration: 1.6 });
+      kit.animateFadeOut(tl, ["#tb-photo", "#tb-bubble", "#tb-chip", "#tb-bg", "#tb-grid"], { at: BEATS.thought.end - 0.4, duration: 0.4 });
+
+      // ---------- Beat 09
+      updateChapter(BEATS.glitch.start, "09 / 14");
+      tl.fromTo("#gl-bg", { opacity: 0 }, { opacity: 1, duration: 0.3 }, BEATS.glitch.start);
+      kit.animateBlurIn(tl, "#gl-photo", { at: BEATS.glitch.start, duration: 0.6 });
+      tl.fromTo("#gl-scan", { opacity: 0 }, { opacity: 0.4, duration: 0.4 }, BEATS.glitch.start + 0.2);
+      tl.fromTo("#gl-grain", { opacity: 0 }, { opacity: 0.4, duration: 0.4 }, BEATS.glitch.start + 0.2);
+      kit.animateReveal(tl, "#gl-chip", { at: BEATS.glitch.start + 0.3, x: -16, duration: 0.5 });
+      kit.animateGlitch(tl, "#gl-photo", { at: BEATS.glitch.start + 1.1, amplitude: 14 });
+      kit.animateGlitch(tl, "#gl-photo", { at: BEATS.glitch.start + 2.4, amplitude: 10 });
+      kit.animateGlitch(tl, "#gl-photo", { at: BEATS.glitch.start + 3.3, amplitude: 16 });
+      kit.animateBounceIn(tl, "#gl-sfx", { at: BEATS.glitch.start + 1.1, from: 20, duration: 0.4 });
+      kit.animateFlicker(tl, "#gl-sfx", { at: BEATS.glitch.start + 1.6, min: 0.3, repeat: 6, duration: 0.08 });
+      kit.animateFadeOut(tl, ["#gl-photo", "#gl-scan", "#gl-grain", "#gl-sfx", "#gl-chip", "#gl-bg"], { at: BEATS.glitch.end - 0.4, duration: 0.4 });
+
+      // ---------- Beat 10
+      updateChapter(BEATS.typewriter.start, "10 / 14");
+      tl.fromTo("#tw-bg", { opacity: 0 }, { opacity: 1, duration: 0.4 }, BEATS.typewriter.start);
+      tl.fromTo("#tw-grid", { opacity: 0 }, { opacity: 0.6, duration: 0.5 }, BEATS.typewriter.start + 0.1);
+      kit.animateSlideIn(tl, "#tw-photo", { at: BEATS.typewriter.start, from: "left", distance: 140, duration: 0.7 });
+      kit.animateReveal(tl, "#tw-chip", { at: BEATS.typewriter.start + 0.3, x: -16, duration: 0.5 });
+      kit.animateTypewriter(tl, "#tw-text", { at: BEATS.typewriter.start + 0.8, duration: 3.4 });
+      kit.animateFadeOut(tl, ["#tw-photo", "#tw-text", "#tw-chip", "#tw-bg", "#tw-grid"], { at: BEATS.typewriter.end - 0.4, duration: 0.4 });
+
+      // ---------- Beat 11
+      updateChapter(BEATS.comic.start, "11 / 14");
+      tl.fromTo("#cm-bg", { opacity: 0 }, { opacity: 1, duration: 0.4 }, BEATS.comic.start);
+      kit.animateCascade(tl, ["#cm-1", "#cm-2", "#cm-3"], { at: BEATS.comic.start, step: 0.18, y: 60, duration: 0.6 });
+      kit.animateReveal(tl, "#cm-chip", { at: BEATS.comic.start + 0.3, x: -16, duration: 0.5 });
+      kit.animateSwing(tl, "#cm-1", { at: BEATS.comic.start + 0.9, angle: 2, duration: 1.4 });
+      kit.animateSwing(tl, "#cm-3", { at: BEATS.comic.start + 1, angle: 2, duration: 1.4 });
+      kit.animateZoomPunch(tl, "#cm-2", { at: BEATS.comic.start + 1.3, scale: 1.08 });
+      kit.animateBounceIn(tl, "#cm-sfx", { at: BEATS.comic.start + 1.6, from: 40, duration: 0.5 });
+      kit.animateShake(tl, "#cm-2", { at: BEATS.comic.start + 1.6, amplitude: 10, duration: 0.07, repeat: 5 });
+      kit.animateFadeOut(tl, ["#cm-1", "#cm-2", "#cm-3", "#cm-sfx", "#cm-chip", "#cm-bg"], { at: BEATS.comic.end - 0.4, duration: 0.4 });
+
+      // ---------- Beat 12
+      updateChapter(BEATS.ticker.start, "12 / 14");
+      tl.fromTo("#tk-bg", { opacity: 0 }, { opacity: 1, duration: 0.4 }, BEATS.ticker.start);
+      tl.fromTo("#tk-scan", { opacity: 0 }, { opacity: 0.25, duration: 0.4 }, BEATS.ticker.start + 0.1);
+      kit.animateBlurIn(tl, "#tk-photo", { at: BEATS.ticker.start, duration: 0.7 });
+      kit.animateReveal(tl, "#tk-chip", { at: BEATS.ticker.start + 0.3, x: -16, duration: 0.5 });
+      kit.animateBounceIn(tl, "#tk-ribbon", { at: BEATS.ticker.start + 0.3, from: -30, duration: 0.5 });
+      kit.animateSwing(tl, "#tk-ribbon", { at: BEATS.ticker.start + 1, angle: 2, duration: 1.4 });
+      kit.animateSlideIn(tl, "#tk-ticker", { at: BEATS.ticker.start + 0.4, from: "bottom", distance: 80, duration: 0.5 });
+      kit.animateTickerScroll(tl, "#tk-ticker", { at: BEATS.ticker.start + 0.8, duration: 7 });
+      kit.animateColorFlash(tl, "#tk-photo", { at: BEATS.ticker.start + 2.6, color: "rgba(255,91,122,0.5)" });
+      kit.animateFadeOut(tl, ["#tk-photo", "#tk-ribbon", "#tk-ticker", "#tk-chip", "#tk-bg", "#tk-scan"], { at: BEATS.ticker.end - 0.4, duration: 0.4 });
+
+      // ---------- Beat 13
+      updateChapter(BEATS.montage.start, "13 / 14");
+      tl.fromTo("#mn-bg", { opacity: 0 }, { opacity: 1, duration: 0.4 }, BEATS.montage.start);
+      tl.fromTo("#mn-grain", { opacity: 0 }, { opacity: 0.3, duration: 0.5 }, BEATS.montage.start + 0.1);
+      kit.animateCascade(tl, ["#mn-1", "#mn-2", "#mn-3"], { at: BEATS.montage.start, step: 0.2, y: 40, duration: 0.6 });
+      kit.animateReveal(tl, "#mn-chip", { at: BEATS.montage.start + 0.3, x: -16, duration: 0.5 });
+      kit.animateFloat(tl, "#mn-1", { at: BEATS.montage.start + 0.9, y: -18, duration: 1.6, repeat: 1 });
+      kit.animateFloat(tl, "#mn-3", { at: BEATS.montage.start + 1.1, y: 14, duration: 1.6, repeat: 1 });
+      kit.animateSwing(tl, "#mn-2", { at: BEATS.montage.start + 1, angle: 2, duration: 1.8 });
+      kit.animateBounceIn(tl, "#mn-caption", { at: BEATS.montage.start + 1.2, from: 30, duration: 0.5 });
+      kit.animateFadeOut(tl, ["#mn-1", "#mn-2", "#mn-3", "#mn-caption", "#mn-chip", "#mn-bg", "#mn-grain"], { at: BEATS.montage.end - 0.4, duration: 0.4 });
+
+      // ---------- Beat 14
+      updateChapter(BEATS.credits.start, "14 / 14");
+      tl.fromTo("#cr-bg", { opacity: 0 }, { opacity: 1, duration: 0.4 }, BEATS.credits.start);
+      tl.fromTo("#cr-vig", { opacity: 0 }, { opacity: 1, duration: 0.6 }, BEATS.credits.start + 0.1);
+      kit.animateBlurIn(tl, "#cr-card", { at: BEATS.credits.start + 0.2, duration: 0.9 });
+      kit.animateReveal(tl, "#cr-chip", { at: BEATS.credits.start + 0.3, x: -16, duration: 0.5 });
+      kit.animateFloat(tl, "#cr-card", { at: BEATS.credits.start + 1.2, y: -8, duration: 1.6, repeat: 1 });
+
+      tl.to({}, { duration: 0.1 }, TOTAL - 0.1);
+
+      window.__timelines[compositionId] = tl;
+    </script>
+  </body>
+</html>

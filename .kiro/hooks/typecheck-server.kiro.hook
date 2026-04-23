@@ -1,0 +1,16 @@
+{
+  "enabled": true,
+  "name": "TypeCheck Server on Save",
+  "description": "Runs TypeScript type checking on the server codebase when any server source file is edited, catching type errors immediately without waiting for runtime crashes.",
+  "version": "1",
+  "when": {
+    "type": "fileEdited",
+    "patterns": [
+      "server/src/**/*.ts"
+    ]
+  },
+  "then": {
+    "type": "runCommand",
+    "command": "cd server && npx tsc --noEmit"
+  }
+}
