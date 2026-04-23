@@ -31,10 +31,9 @@ WORKDIR /app
 # better-sqlite3 needs libstdc++ at runtime
 RUN apt-get update && apt-get install -y libstdc++6 && rm -rf /var/lib/apt/lists/*
 
-# Copy server source + node_modules (includes workspace hoisted deps)
+# Copy server source + node_modules (hoisted by npm workspaces to root)
 COPY server/ ./server/
 COPY --from=deps /app/node_modules ./node_modules
-COPY --from=deps /app/server/node_modules ./server/node_modules 
 
 # Copy client build output
 COPY --from=client-build /app/client/dist ./client/dist
