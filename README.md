@@ -2,90 +2,134 @@
 
 **Turn a single prompt into a fully animated video story** — built with spec-driven development in **Kiro** and powered by **ElevenLabs** audio AI.
 
-> 🏆 Submission for [LiveHack #5: Kiro Challenge](https://elevenlabs.io) — Build an AI-powered app using Kiro's spec-driven development and ElevenLabs APIs.
+> 🏆 Submission for [LiveHack #5: Kiro Challenge](https://hacks.elevenlabs.io/hackathons/4) — Build an AI-powered app using Kiro's spec-driven development and ElevenLabs APIs.
 
 ---
 
-## Built with Kiro — Spec-Driven Development
+## How Kiro Drove the Development
 
-This entire project was designed and implemented using **Kiro**, the AI-first IDE that uses spec-driven development. Instead of ad-hoc prompting, every feature followed a structured workflow:
+Reel&Ink was built entirely inside **Kiro**, the AI-first IDE. The project started with a spec-driven first iteration — requirements, design, and tasks defined upfront — then evolved through vibecoding for UI polish, responsive design, and feature refinement. The specs stayed in place throughout to keep the codebase structured and consistent.
 
-1. **Requirements** — defined what the app should do in clear, testable specs
-2. **Design** — Kiro's AI agent helped architect the technical approach (database schema, API routes, service layers, component hierarchy)
-3. **Tasks** — broke the design into ordered implementation tasks
-4. **Implementation** — Kiro's agent executed each task systematically, producing maintainable, well-structured code
+### Specs — The Foundation
 
-The full specs live in `.kiro/specs/animated-story-creator/` — requirements, design, and task breakdown. The steering files in `.kiro/steering/` encode project conventions so every AI-generated file follows the same patterns.
+The full spec lives in `.kiro/specs/animated-story-creator/` with three documents:
 
-### Kiro Features Used
+- **requirements.md** — 11 requirements covering project management, AI mode, style configuration, character/location generation, script writing, audio production, video composition, presets, backend API, and UI design. Each requirement has testable acceptance criteria.
+- **design.md** — Technical architecture: component diagram, database schema (SQLite with 8 tables), API endpoints (20+ routes), AI service interfaces (`TextImageProvider`, `ElevenLabsServiceInterface`), video pipeline stages, error handling matrix, and correctness properties.
+- **tasks.md** — 15 ordered implementation tasks broken into subtasks, each referencing specific requirements. Kiro's agent worked through these systematically: data layer → services → API routes → frontend → video pipeline.
 
-- **Specs** — structured requirements → design → tasks workflow for the entire app
-- **Steering files** — project conventions, backend patterns, frontend patterns, and HyperFrames reference loaded automatically into context
-- **Hooks** — automated linting, type-checking, and shared type syncing on file changes
-- **ElevenLabs Power** — Kiro Power plugin that gave the AI agent working knowledge of all ElevenLabs APIs without reading docs manually
-- **HyperFrames Power** — Kiro Power for HTML-based video composition authoring with GSAP animations
+This spec-first approach meant the AI agent had full context of the system architecture when implementing any piece — it knew the database schema when writing routes, knew the API shape when building frontend pages, and knew the asset pipeline when composing video.
+
+### Steering Files — Keeping Code Consistent
+
+Five steering files in `.kiro/steering/` encode project conventions that Kiro loads automatically based on context:
+
+| File | Inclusion | What it does |
+|------|-----------|-------------|
+| `project-conventions.md` | Always | Tech stack, project structure, coding patterns (use `uuid` for IDs, `withAiRetries` for AI calls, `generateStructured<T>()` for JSON output), UI conventions, database rules |
+| `backend-routes.md` | When editing `server/src/routes/**` | Route structure patterns, error handling (404/400/500/422), debug logging wrapping, AI Mode specifics |
+| `backend-services.md` | When editing `server/src/services/**` | AI provider call patterns, ElevenLabs usage, asset storage conventions, creative prompt templates, video pipeline functions |
+| `frontend-pages.md` | When editing `client/src/pages/**` | Page structure, data fetching with `api.ts`, state management (useState/useEffect only), loading/error patterns |
+| `hyperframes-reference.md` | Manual inclusion | Full HyperFrames composition reference: data attributes, GSAP timelines, nested compositions, caption system, Story Motion Kit API |
+
+These steering files meant that whether Kiro was writing a new route, a new page, or fixing a bug, it always followed the same patterns — consistent error handling, consistent state management, consistent AI call wrapping.
+
+### Hooks — Automated Quality Gates
+
+Three agent hooks in `.kiro/hooks/` run automatically on file changes:
+
+- **Sync Shared Types** — When `server/src/types.ts` is edited, the agent automatically compares shared interfaces with `client/src/lib/types.ts` and syncs changes. This kept frontend and backend types aligned without manual copy-paste.
+- **TypeCheck Server on Save** — Runs `tsc --noEmit` on the server codebase when any server source file is edited, catching type errors immediately.
+- **Lint HyperFrames Compositions** — Runs `npx hyperframes lint` when HTML composition files are edited, catching structural errors (missing data attributes, overlapping tracks).
+
+### MCP Servers — Extended Agent Capabilities
+
+Three MCP servers configured in `.kiro/settings/mcp.json` gave the agent additional tools:
+
+- **SQLite MCP** — Direct database access to `server/data/stories.db` for inspecting schema, querying data, and debugging persistence issues during development.
+- **Fetch MCP** — URL fetching for reading documentation and API references when the agent needed to verify SDK usage or check endpoint specs.
+- **Firecrawl MCP** — Web scraping and search capabilities that gave the agent access to the web during development — used to look up ElevenLabs API docs, HyperFrames documentation, GSAP animation references, and Hono middleware patterns.
+
+### Kiro Powers
+
+- **ElevenLabs Power** — Gave the agent working knowledge of all ElevenLabs APIs (TTS, Voice Design, Music, Sound Effects, Conversational AI) without manually reading docs. Context loaded dynamically based on what was being built.
+- **HyperFrames Power** — Composition authoring reference, GSAP animation patterns, and CLI commands for the video pipeline.
 
 ---
 
-## Powered by ElevenLabs Audio AI
+## How ElevenLabs Powers the Audio
 
-ElevenLabs is the backbone of all audio in Reel&Ink. Every voice, every sound, every musical note is generated through their APIs:
+Every sound in Reel&Ink comes from ElevenLabs. The integration lives in `server/src/services/elevenlabs-service.ts` using the `@elevenlabs/elevenlabs-js` SDK.
 
-| ElevenLabs API | What it does in Reel&Ink |
-|----------------|--------------------------|
-| **Text-to-Speech (v3)** | Narration and character dialogue with expressive, natural voices and word-level timestamps for subtitle sync |
-| **Voice Design** | Creates unique custom voices for each character from text descriptions — no voice cloning needed, just describe the personality |
-| **Music Generation** | Composes original background music per scene matching the story's mood and tone |
-| **Sound Effects** | Generates contextual sound effects (footsteps, wind, doors, ambient) from text cues in the script |
+### Voice Design — Unique Voices from Text
 
-The ElevenLabs integration lives in `server/src/services/elevenlabs-service.ts` and is used across the script generation and audio production pipeline.
+Instead of picking from stock voices, the system creates a unique voice for each character. The AI generates a voice description (e.g., "A warm, gravelly male voice with a slight rasp, mid-40s, confident but gentle"), and ElevenLabs' Voice Design API creates a custom voice from that description. If voice design fails, the system falls back to preset voices (Rachel, Domi, Bella, Antoni, Elli, Josh).
+
+### Text-to-Speech — Narration and Dialogue
+
+Uses the `eleven_v3` model for expressive speech with word-level timestamps. Each dialogue line includes `previousText` and `nextText` context so the voice flows naturally across lines. The word-level timestamps (`{ word, startMs, endMs }`) drive subtitle synchronization and animation timing in the video composition.
+
+### Music Generation
+
+Each scene gets original background music composed via the ElevenLabs music endpoint. The script's music cue (e.g., "Tense orchestral build with pizzicato strings") is sent as a prompt with a duration matching the scene length.
+
+### Sound Effects
+
+Contextual sound effects generated from text cues in the script (e.g., "Heavy rain on a tin roof", "Footsteps on gravel"). Each scene can have its own ambient sound effect layer.
 
 ---
 
-## What it does
+## How HyperFrames Composes the Video
+
+The video pipeline turns a script + audio + images into a playable animated video, all rendered as HTML with GSAP timelines.
+
+### Three-Stage Pipeline
+
+1. **Video Direction** — An AI agent (Azure OpenAI multi-agent pipeline, or Gemini fallback) plans every shot: which scene preset to use, which animation effects, camera angles, and how to layer images. The agents include a preset reviewer, section planner, critic, and director.
+
+2. **Agentic Composition** — A second multi-agent pipeline (playbook → blueprint → HTML author → repair agent) generates the actual HyperFrames HTML. The composition includes `data-start`, `data-duration`, and `data-track-index` attributes for timing, plus a GSAP timeline registered on `window.__timelines` for animations.
+
+3. **Deterministic Fallback** — If the agentic pipeline fails, a code-driven generator (`buildDeterministicComposition`) produces valid HyperFrames HTML programmatically — scene plans, timeline sections, overlay/caption rendering, all without AI. Video generation always succeeds.
+
+### Audio-Visual Sync
+
+Word-level timestamps from ElevenLabs drive the synchronization:
+- Subtitle captions appear and disappear in sync with spoken words
+- Character animations (speaking effects, emphasis) are timed to dialogue
+- Scene transitions align with narration breaks
+- Music and SFX layers are positioned on separate audio tracks with proper timing
+
+The final composition is previewed in-browser using `@hyperframes/player`.
+
+---
+
+## What it Does
 
 You type a story idea. The AI does the rest:
 
 1. **Generates a visual style** — color palette, artistic medium, lighting, mood
-2. **Creates characters** — names, descriptions, AI-generated portraits, custom-designed voices (ElevenLabs Voice Design)
-3. **Builds locations** — background matte paintings matching the story's visual direction
-4. **Writes a structured script** — narrator text, character dialogue, music cues, sound effects
-5. **Produces all audio** — narrated voiceover, character dialogue with word-level timestamps, background music, sound effects (all ElevenLabs)
-6. **Composes an animated video** — HyperFrames HTML composition with GSAP animations, synchronized to audio timestamps
+2. **Creates characters** — names, descriptions, AI portraits, custom-designed voices
+3. **Builds locations** — background matte paintings matching the visual direction
+4. **Writes a structured script** — narrator text, dialogue, music cues, sound effects
+5. **Produces all audio** — narration, dialogue, music, SFX (all ElevenLabs)
+6. **Composes an animated video** — HyperFrames HTML with GSAP animations synced to audio
 
-The result is a playable animated video preview right in the browser.
-
-## Two creation modes
+### Two Creation Modes
 
 | Mode | How it works |
 |------|-------------|
-| **AI Mode** | One prompt → full pre-production in ~60 seconds (style, 2 characters, 2 locations, story brief). Then generate script, audio, and video step by step. |
-| **Manual Mode** | Build everything yourself: pick a style preset, define characters, create locations, write/generate the script, produce audio, compose video. |
+| **AI Mode** | One prompt → full pre-production in ~60s (style, 2 characters, 2 locations, brief). Then generate script, audio, and video step by step. |
+| **Manual Mode** | Build everything yourself: pick a style, define characters, create locations, write the script, produce audio, compose video. |
 
 ---
 
 ## Tech Stack
 
-### Frontend
-- **React 19** + **React Router 7** — SPA with step-by-step workflow navigation
-- **Tailwind CSS v4** — custom paper/ink color palette, distinctive typography
-- **Lucide React** — icon system
-- **GSAP** — animation engine for video compositions
-- **@hyperframes/player** — in-browser video preview
-
-### Backend
-- **Hono** — lightweight HTTP framework on Node.js
-- **SQLite** (better-sqlite3) — embedded database with WAL mode
-- **TypeScript** — end-to-end type safety
-
-### AI Services
-- **Google Gemini** (`@google/genai` SDK) — text generation, image generation, structured JSON output
-- **Azure OpenAI** (Agents SDK) — multi-agent video direction and composition pipelines
-- **ElevenLabs** — TTS, voice design, music composition, sound effects
-
-### Video Pipeline
-- **HyperFrames** — HTML-based video composition with GSAP timelines
-- Three-stage generation: AI direction → agentic composition → deterministic fallback
+- **Frontend**: React 19, React Router 7, Tailwind CSS v4, Lucide React, GSAP, @hyperframes/player
+- **Backend**: Hono on Node.js, SQLite (better-sqlite3, WAL mode), TypeScript (ESM)
+- **AI**: Google Gemini (`@google/genai`), Azure OpenAI (Agents SDK), ElevenLabs (`@elevenlabs/elevenlabs-js`)
+- **Video**: HyperFrames HTML compositions with GSAP timelines
+- **Development**: Kiro (specs, steering, hooks, powers, MCP servers)
 
 ---
 
@@ -94,54 +138,28 @@ The result is a playable animated video preview right in the browser.
 ### Prerequisites
 
 - **Node.js 22+** (use `nvm use` — `.nvmrc` included)
-- API keys for: **Gemini**, **ElevenLabs**, and optionally **Azure OpenAI**
+- API keys: **Gemini**, **ElevenLabs**, optionally **Azure OpenAI**
 
-### 1. Clone and install
+### Install and Run
 
 ```bash
 git clone https://github.com/Abel1011/reel-link.git
 cd reel-link
 npm install
-```
-
-### 2. Configure environment
-
-```bash
 cp .env.example server/.env
+# Edit server/.env with your API keys
 ```
 
-Edit `server/.env`:
-
-```env
-GEMINI_API_KEY=your_gemini_key
-ELEVENLABS_API_KEY=your_elevenlabs_key
-
-# Optional — enables multi-agent video pipelines
-AZURE_OPENAI_API_KEY=your_azure_key
-AZURE_OPENAI_ENDPOINT=https://your-resource.openai.azure.com
-```
-
-### 3. Run in development
-
-Start the backend:
+Start backend and frontend in separate terminals:
 ```bash
-npm run dev --workspace=server
+npm run dev --workspace=server    # http://localhost:3001
+npm run dev --workspace=client    # http://localhost:5173
 ```
 
-In a separate terminal, start the frontend:
-```bash
-npm run dev --workspace=client
-```
-
-Open **http://localhost:5173**.
-
----
-
-## Docker
+### Docker
 
 ```bash
 docker build -t reel-ink .
-
 docker run -p 3001:3001 \
   -e GEMINI_API_KEY=your_key \
   -e ELEVENLABS_API_KEY=your_key \
@@ -149,8 +167,6 @@ docker run -p 3001:3001 \
   -v story-assets:/app/server/assets \
   reel-ink
 ```
-
-Open **http://localhost:3001**. Volumes persist the database and generated assets.
 
 ---
 
@@ -160,7 +176,7 @@ Open **http://localhost:3001**. Volumes persist the database and generated asset
 |----------|----------|-------------|
 | `GEMINI_API_KEY` | Yes | Google Gemini API key |
 | `ELEVENLABS_API_KEY` | Yes | ElevenLabs API key |
-| `AZURE_OPENAI_API_KEY` | No | Azure OpenAI key (multi-agent video pipelines) |
+| `AZURE_OPENAI_API_KEY` | No | Azure OpenAI (multi-agent video pipelines) |
 | `AZURE_OPENAI_ENDPOINT` | No | Azure OpenAI endpoint URL |
 | `TEXT_IMAGE_PROVIDER` | No | `gemini` (default) or `azure` |
 | `PORT` | No | Server port (default: `3001`) |
@@ -171,51 +187,20 @@ Open **http://localhost:3001**. Volumes persist the database and generated asset
 
 ```
 reel-ink/
+├── .kiro/
+│   ├── specs/                 # Requirements, design, tasks
+│   ├── steering/              # Project conventions, route/service/page patterns
+│   ├── hooks/                 # Type sync, typecheck, HyperFrames lint
+│   └── settings/mcp.json     # SQLite, Fetch, Firecrawl MCP servers
 ├── client/                    # React frontend (Vite)
 │   ├── src/pages/             # Landing, AI Mode, Style, Characters,
 │   │                          #   Locations, Script, Video
-│   ├── src/components/ui/     # Shared UI components
-│   ├── src/layouts/           # ProjectLayout (step navigation)
-│   └── public/hyperframes/    # HyperFrames player + vendor assets
+│   └── public/hyperframes/    # HyperFrames player + Story Motion Kit
 ├── server/                    # Hono backend
-│   ├── src/routes/            # API route modules
+│   ├── src/routes/            # 9 API route modules
 │   ├── src/services/          # AI providers, ElevenLabs, video pipeline
-│   ├── src/repositories/      # SQLite data access layer
+│   ├── src/repositories/      # SQLite data access (6 repositories)
 │   └── src/data/              # Style, scene, effect presets
-├── .kiro/                     # Kiro specs, steering, hooks
 ├── powers/                    # Kiro Powers (HyperFrames)
-├── Dockerfile                 # Multi-stage build
-└── .env.example               # Required environment variables
-```
-
----
-
-## How the Video Pipeline Works
-
-```
-Story Script + Audio Assets (ElevenLabs)
-        │
-        ▼
-┌─────────────────────┐
-│  Video Direction     │  AI plans shots, camera angles,
-│  (Azure agents or   │  effects, image strategies
-│   Gemini fallback)   │
-└────────┬────────────┘
-         │
-         ▼
-┌─────────────────────┐
-│  Agentic Composition │  Multi-agent HTML generation:
-│  playbook → blueprint│  playbook → blueprint → author → repair
-│  → author → repair   │
-└────────┬────────────┘
-         │ fails?
-         ▼
-┌─────────────────────┐
-│  Deterministic       │  Code-driven fallback:
-│  Composition         │  always produces valid HTML
-└────────┬────────────┘
-         │
-         ▼
-   @hyperframes/player
-   (in-browser preview)
+└── Dockerfile                 # Multi-stage build (Node 22)
 ```

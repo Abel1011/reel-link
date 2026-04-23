@@ -81,6 +81,10 @@ export interface ScenePlan {
   rain?: boolean;
   /** Layout variant for dialogue scenes: "split" | "overShoulder" | "stacked" | "closeupSwap". */
   variant?: string;
+  /** Optional location photo drawn behind the gradient for dialogue/heroPose so
+   * every scene reads as taking place somewhere specific, not against a flat
+   * color wash. */
+  backdropImage?: string;
 }
 
 export interface TimelineSection {
@@ -382,6 +386,12 @@ function pickSceneKind(
   speakerIds: string[],
   tone: StoryTone | undefined,
   isFinalBeat: boolean,
+  context: {
+    isFirstSection: boolean;
+    locationChanged: boolean;
+    previousKind: ScenePlan["kind"] | undefined;
+    hasBackgroundImage: boolean;
+  },
 ): ScenePlan["kind"] {
   const sceneText = normalizeText(
     [
@@ -396,13 +406,28 @@ function pickSceneKind(
     isFinalBeat ||
     tone === "heroic" ||
     /(hero|victory|triumph|together|brave|rescue|climax|save|legend)/.test(sceneText);
-  const feelsKinetic = /(impact|crash|roar|rush|panic|charge|slam|burst|chaos|quake)/.test(sceneText);
-  // Prefer the dialogue preset whenever the section has a genuine back-and-forth
-  // (2+ distinct speakers, 2+ lines). The narrator and the dialogue play
-  // sequentially, not simultaneously, so a leading narrator line should not
-  // disqualify the dialogue scene — otherwise every dialogue section falls back
-  // to a single-character heroPose.
+  const feelsKinetic = /(impact|crash|roar|rush|panic|charge|slam|burst|chaos|quake|slip|fall|strike|hit|shock)/.test(sceneText);
   const canUseDialoguePreset = speakerIds.length >= 2 && section.dialogueLines.length >= 2;
+
+  // 1. Opening beat or fresh location → establishing kenBurns so the viewer sees
+  //    WHERE we are. Without this every section of a 2-character story collapses
+  //    into the same two portraits and feels monotonous.
+  if (context.hasBackgroundImage && (context.isFirstSection || context.locationChanged)) {
+    return "kenBurns";
+  }
+
+  // 2. Final beat or strongly heroic/kinetic → heroPose (single-character cinematic).
+  if (isFinalBeat || (feelsHeroic && !canUseDialoguePreset) || (feelsKinetic && !canUseDialoguePreset)) {
+    return "heroPose";
+  }
+
+  // 3. Break runs of the same kind so the video has visual rhythm.
+  if (context.previousKind === "dialogue" && canUseDialoguePreset && (feelsHeroic || feelsKinetic)) {
+    return "heroPose";
+  }
+  if (context.previousKind === "heroPose" && canUseDialoguePreset) {
+    return "dialogue";
+  }
 
   if (canUseDialoguePreset) return "dialogue";
   if (feelsHeroic || feelsKinetic) return "heroPose";
@@ -724,6 +749,11 @@ function buildScenePlans(
   characterNameById: Map<string, string>,
   characterPortraitById: Map<string, string>,
   ambientStormActive: boolean,
+  sceneContext: {
+    isFirstSection: boolean;
+    locationChanged: boolean;
+    previousKind: ScenePlan["kind"] | undefined;
+  },
 ): ScenePlan[] {
   const backgroundImage = findFirstImage(section, "background") ?? findFirstImage(section);
   const leadCharacterImage = findCharacterLayerImage(section, 0) ?? backgroundImage;
@@ -811,6 +841,7 @@ function buildScenePlans(
         shot.kind === "heroPose" || ambientStormActive,
         ambientStormActive || shot.kind === "heroPose" || /(storm|panic|collapse|impact|secret|fear|dark)/.test(sceneText),
       ),
+      backdropImage: toAssetUrl(backgroundImage),
       rain,
     };
 
@@ -883,7 +914,20 @@ function buildScenePlans(
   };
 
   if (!directionShots || directionShots.length === 0) {
-    const sceneKind = pickSceneKind(section, narratorDuration, speakerIds, project.brief?.tone, isFinalBeat);
+    const sceneKind = pickSceneKind(section, narratorDuration, speakerIds, project.brief?.tone, isFinalBeat, {
+      isFirstSection: sceneContext.isFirstSection,
+      locationChanged: sceneContext.locationChanged,
+      previousKind: sceneContext.previousKind,
+      hasBackgroundImage: Boolean(backgroundImage),
+    });
+    // Rotate which character headlines a heroPose so a 2-character story doesn't
+    // keep showing the same face. Even sections feature speaker 0; odd sections
+    // feature speaker 1 when available.
+    const heroSpeakerId = sectionIndex % 2 === 1 && speakerIds[1] ? speakerIds[1] : speakerIds[0];
+    const heroCharacterImage = characterPortraitById.get(heroSpeakerId)
+      ?? firstSpeaker?.speakerPortrait
+      ?? toAssetUrl(leadCharacterImage)
+      ?? toAssetUrl(backgroundImage);
     const scene: ScenePlan = {
       kind: sceneKind,
       at: sectionStart,
@@ -895,6 +939,7 @@ function buildScenePlans(
         sceneKind === "heroPose" || ambientStormActive,
         ambientStormActive || /(storm|panic|collapse|impact|secret|fear|dark)/.test(sceneText),
       ),
+      backdropImage: toAssetUrl(backgroundImage),
       rain: ambientStormActive || hasRainAtmosphere(
         section.narratorText,
         section.soundEffectCue,
@@ -925,10 +970,7 @@ function buildScenePlans(
     }
 
     if (sceneKind === "heroPose") {
-      scene.image = firstSpeaker?.speakerPortrait
-        ?? characterPortraitById.get(speakerIds[0])
-        ?? toAssetUrl(leadCharacterImage)
-        ?? toAssetUrl(backgroundImage);
+      scene.image = heroCharacterImage;
       scene.lines = timedDialogueLines.length > 0
         ? rebaseDialogueRuntimeLines(buildDialogueRuntimeLines(timedDialogueLines, speakerIds), 0, sectionDuration)
         : undefined;
@@ -1102,6 +1144,8 @@ export function buildTimeline(
   const sectionStormStates = inferSectionStormStates(project, locationsById);
   const narratorEnabled = project.brief?.narratorEnabled !== false;
   let cursor = 0;
+  let previousLocationId: string | undefined;
+  let previousSceneKind: ScenePlan["kind"] | undefined;
 
   return script.sections.map((section, index) => {
     const speakerIds = uniqueSpeakerIds(section);
@@ -1131,6 +1175,7 @@ export function buildTimeline(
 
     const duration = Math.max(0.9, dialogueCursor || narratorDuration || estimatedDurationFromText(section.narratorText));
     const locationName = section.locationId ? locationsById.get(section.locationId)?.name ?? "Unknown Location" : "Unknown Location";
+    const locationChanged = Boolean(section.locationId) && section.locationId !== previousLocationId;
     const scenes = buildScenePlans(
       project,
       section,
@@ -1144,11 +1189,21 @@ export function buildTimeline(
       characterNameById,
       characterPortraitById,
       sectionStormStates[index] ?? false,
+      {
+        isFirstSection: index === 0,
+        locationChanged,
+        previousKind: previousSceneKind,
+      },
     ).map((scene) => ({
       ...scene,
       headline: scene.kind === "kenBurns" ? scene.headline || headlineFromSection(section, locationName) : scene.headline,
       caption: scene.kind === "kenBurns" ? scene.caption || captionFromSection(section, locationName) : scene.caption,
     }));
+
+    if (scenes.length > 0) {
+      previousSceneKind = scenes[scenes.length - 1].kind;
+    }
+    if (section.locationId) previousLocationId = section.locationId;
 
     const overlays = buildSectionOverlays(project, section, scenes, cursor, duration, index, locationName);
     const captions = subtitlesEnabled
@@ -1578,6 +1633,7 @@ function renderSceneAndOverlayScript(timeline: TimelineSection[], projectId: str
             trackBase: scene.trackBase,
             label: scene.label,
             backdrop: scene.backdrop,
+            backdropImage: scene.backdropImage,
             rain: scene.rain,
             variant: scene.variant,
             leftImage: scene.leftImage,
@@ -1596,6 +1652,7 @@ function renderSceneAndOverlayScript(timeline: TimelineSection[], projectId: str
             trackBase: scene.trackBase,
             label: scene.label,
             backdrop: scene.backdrop,
+            backdropImage: scene.backdropImage,
             rain: scene.rain,
             image: scene.image,
             lines: scene.lines,

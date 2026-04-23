@@ -1926,6 +1926,25 @@
   scenes.dialogue = function (tl, root, o) {
     const ctx = sceneCtx(o);
     const { at, duration, tk } = ctx;
+    const ids = [];
+    // Optional location backdrop sits behind the gradient tint so every
+    // dialogue scene still reads as taking place somewhere specific instead of
+    // a flat color wash.
+    if (o.backdropImage) {
+      const bd = kitRef.id("dg-bd", at);
+      createScenePlate(root, {
+        id: bd,
+        src: o.backdropImage,
+        inset: 72,
+        start: at,
+        duration,
+        trackIndex: tk,
+        filter: "brightness(0.52) saturate(0.9) blur(2px)",
+        opacity: 0.78,
+      });
+      tl.fromTo(`#${bd}`, { scale: 1.05 }, { scale: 1.12, duration, ease: "sine.inOut" }, at);
+      ids.push(`#${bd}`);
+    }
     const bg = kitRef.id("dg-bg", at);
     const rain = kitRef.id("dg-rn", at);
     createGradientBackdrop(root, {
@@ -1934,9 +1953,13 @@
       inset: 72,
       start: at,
       duration,
-      trackIndex: tk,
+      trackIndex: tk + 1,
     });
-    const ids = [`#${bg}`];
+    if (o.backdropImage) {
+      // Soften the gradient so the photo remains visible underneath.
+      tl.set(`#${bg}`, { opacity: 0.55 }, at);
+    }
+    ids.push(`#${bg}`);
     if (o.rain !== false) {
       createRainLines(root, {
         id: rain,
@@ -3442,6 +3465,25 @@
     // Cinematic hero: radial burst + speed lines + SFX
     const ctx = sceneCtx(o);
     const { at, duration, tk } = ctx;
+    const extraIds = [];
+    // Optional location photo behind the gradient so hero beats read as being
+    // in a real place (canyon / office / battlefield) rather than against a flat
+    // color wash.
+    if (o.backdropImage) {
+      const bd = kitRef.id("hp-bd", at);
+      createScenePlate(root, {
+        id: bd,
+        src: o.backdropImage,
+        inset: 72,
+        start: at,
+        duration,
+        trackIndex: tk,
+        filter: "brightness(0.5) saturate(0.95) blur(2px)",
+        opacity: 0.82,
+      });
+      tl.fromTo(`#${bd}`, { scale: 1.06 }, { scale: 1.14, duration, ease: "sine.inOut" }, at);
+      extraIds.push(`#${bd}`);
+    }
     const bg = kitRef.id("hp-bg", at);
     const burst = kitRef.id("hp-br", at);
     const speed = kitRef.id("hp-sp", at);
@@ -3452,8 +3494,9 @@
       inset: 72,
       start: at,
       duration,
-      trackIndex: tk,
+      trackIndex: tk + 1,
     });
+    if (o.backdropImage) tl.set(`#${bg}`, { opacity: 0.5 }, at);
     createRadialBurst(root, {
       id: burst,
       inset: 72,
@@ -3490,7 +3533,7 @@
     tl.to(`#${speed}`, { rotation: 18, duration: duration - 1, ease: "none" }, at + 0.6);
     animateZoomPunch(tl, `#${photo}`, { at: at + 1.1, scale: 1.14 });
     animateColorFlash(tl, `#${photo}`, { at: at + 1.1, color: o.flashColor || "rgba(255, 211, 106, 0.6)" });
-    const ids = [`#${bg}`, `#${burst}`, `#${speed}`, `#${photo}`];
+    const ids = [...extraIds, `#${bg}`, `#${burst}`, `#${speed}`, `#${photo}`];
     if (o.sfx) {
       const fx = kitRef.id("hp-fx", at);
       createSfxBurst(root, {
